@@ -59,7 +59,7 @@ QueueHandle_t m_i2sQueue;
 
 // Audio playing
 bool b_audio_end_of_mp3 = false;
-bool b_audio_finished = false;
+bool b_audio_finished = true;
 
 Audio audio;
 
@@ -288,7 +288,10 @@ void loop() {
     DPL("Prepare deep sleep");
 
     dim_light_up_down_esp32(false);
-    while (max_light_level!=0) {delay(10);}; //wait for the light to go off
+    while (max_light_level!=0 or !b_audio_finished) {
+        DPL("WAIT for Light or Sound to finish");
+        delay(10);
+    }; //wait for the light to go off
     digitalWrite(DISPLAY_AND_SOUND_POWER, LOW);
 
 //    esp_sleep_enable_timer_wakeup(sleep_sec * 1000 * 1000);

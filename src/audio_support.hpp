@@ -23,7 +23,7 @@ void fade_in(void *parameter) {
         DPF("INT Fade-In Volume: %i\n", i);
         if (b_pir_wave) break;
     }
-    vTaskDelete(NULL);
+    vTaskSuspend(NULL);
 }
 
 void fade_out(void *parameter) {
@@ -32,7 +32,7 @@ void fade_out(void *parameter) {
 
     for (int i = vol; i > 0; i--) {
         audio.setVolume(i);
-        delay(200);
+        vTaskDelay(pdMS_TO_TICKS(200));
         DPF("INT Fade-Out Volume: %i\n", i);
     }
     b_audio_finished = true;
@@ -72,7 +72,8 @@ void PlayWakeupSong() {
         audio.loop();
 
         if (b_pir_wave) {
-            vTaskDelete(xHandle);
+            if( xHandle != NULL ) {vTaskDelete(xHandle);}
+
             b_pir_wave = false;
             xTaskCreate(
                     fade_out,              /* Task function. */
@@ -91,7 +92,6 @@ void PlayWakeupSong() {
             log_i("free heap=%i", ESP.getFreeHeap());
         }
     }
-    delay(500);
     DPL("DONE");
 }
 
