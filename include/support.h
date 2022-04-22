@@ -11,7 +11,7 @@
 #define LED_BUILTIN 13
 #define I2S_MICRO I2S_NUM_1
 
-#undef MYDEBUG
+#define MYDEBUG
 #ifdef MYDEBUG
 #define MYDEBUG_CORE
 #define DP(x)     Serial.print (x)

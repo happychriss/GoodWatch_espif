@@ -13,6 +13,7 @@
 #include <GxEPD2_BW.h>
 #include <GxEPD2_GFX.h>
 #include "GxEPD2_display_selection_new_style.h"
+
 /*
 #include <Fonts/FreeSerif24pt7b.h>
 #include "fonts/FreeSansNumOnly35.h"
@@ -24,12 +25,29 @@
 */
 
 #include "custom_fonts/FreeSansNumOnly70.h"
-
+#include "VL6180X.h"
 #include <global_hardware.h>
 
 #include <analogWrite.h>
 
 
+uint16_t ambient_light=0;
+uint16_t max_light_level;
+
+extern VL6180X distance_sensor;
+
+enum vl6180x_als_gain { // Data sheet shows gain values as binary list
+
+    GAIN_20 = 0, // Actual ALS Gain of 20
+    GAIN_10,     // Actual ALS Gain of 10.32
+    GAIN_5,      // Actual ALS Gain of 5.21
+    GAIN_2_5,    // Actual ALS Gain of 2.60
+    GAIN_1_67,   // Actual ALS Gain of 1.72
+    GAIN_1_25,   // Actual ALS Gain of 1.28
+    GAIN_1,      // Actual ALS Gain of 1.01
+    GAIN_40,     // Actual ALS Gain of 40
+
+};
 
 const uint16_t pwmtable_16[256] PROGMEM =
         {
@@ -69,8 +87,26 @@ private:
     void drawBitmaps400x300();
 };
 
+void DistanceSensorSetup() {
+
+//        ALS  Analogue Gain: 0x47 = gain 40: SYSALS__ANALOGUE_GAIN = 7, address: 0x03F: OK
+//        ALS Integration Time: 400MS: SYSALS__INTEGRATION_PERIOD, Address: 0x040 = 0x18F (8.bit gesetzt):OK
+//        ALS Scaler =16, FIRMWARE__RESULT_SCALER 0x7, address 0x120
+//
+    // Initialize VL6180X (configure I2C and initial values)
+    distance_sensor.init();
+    distance_sensor.configureDefault();
+    distance_sensor.setScaling(2); // distance
+    distance_sensor.writeReg(VL6180X::SYSALS__ANALOGUE_GAIN, (0x40 | GAIN_40));// ALS
+    distance_sensor.writeReg(VL6180X::SYSRANGE__MAX_CONVERGENCE_TIME, 30);
+    distance_sensor.writeReg16Bit(VL6180X::SYSALS__INTEGRATION_PERIOD, 0x18F); //400 ms
+//        distance_sensor.writeReg(VL6180X::FIRMWARE__RESULT_SCALER,0x07);
+    distance_sensor.setTimeout(500);
+}
+
 void pwm_up_down(boolean direction_up, const uint16_t pwm_table[], int16_t size, uint16_t delay_ms) {
     int16_t tmp;
+
     analogWriteResolution(12);
     if (direction_up) {
 
@@ -93,45 +129,69 @@ void pwm_up_down(boolean direction_up, const uint16_t pwm_table[], int16_t size,
     }
 }
 
-void run_up_down_task( void * parameter ){
+void dim_light_up_down_task(void *parameter) {
 #define MAX_LIGHT_LEVEL 128
 
-    bool direction_up = *((bool*)parameter);
+    bool direction_up = *((bool *) parameter);
     const int freq = 120;
     const int ledChannel = 0;
     const int resolution = 8;
-    ledcSetup(ledChannel, freq, resolution);
-    ledcAttachPin(DISPLAY_CONTROL, ledChannel);
 
+    // enable light
     if (direction_up) {
-        for (int dutyCycle = 0; dutyCycle <= MAX_LIGHT_LEVEL; dutyCycle++) {
-            // changing the LED brightness with PWM
-            ledcWrite(ledChannel, dutyCycle);
-            delay(10);
+        ledcSetup(ledChannel, freq, resolution);
+        ledcAttachPin(DISPLAY_CONTROL, ledChannel);
+
+        ambient_light = distance_sensor.readAmbientSingle();
+
+        if (ambient_light<15) {max_light_level=MAX_LIGHT_LEVEL/2;}
+        else if (ambient_light<80)  {max_light_level=MAX_LIGHT_LEVEL;}
+        else max_light_level=0;
+        DPL("Dim Light ON:");
+        DPF("*** Ambient Light:%i\n", ambient_light);
+        DPF("*** Light Level:%i\n", max_light_level);
+
+        if (max_light_level!=0) {
+            digitalWrite(DISPLAY_AND_SOUND_POWER, HIGH);
+            delay(50);
+            for (int dutyCycle = 0; dutyCycle <= max_light_level; dutyCycle++) {
+                // changing the LED brightness with PWM
+                ledcWrite(ledChannel, dutyCycle);
+                delay(10);
+            }
         }
+
+    // disable light
     } else {
-        for(int dutyCycle = MAX_LIGHT_LEVEL; dutyCycle >= 0; dutyCycle--){
-            // changing the LED brightness with PWM
-            ledcWrite(ledChannel, dutyCycle);
-            delay(3);
+        DPL("Dim Light OFF:");
+        DPF("*** Light Level:%i\n", max_light_level);
+        if (max_light_level!= 0) {
+
+            for (int dutyCycle = max_light_level; dutyCycle >= 0; dutyCycle--) {
+                // changing the LED brightness with PWM
+                ledcWrite(ledChannel, dutyCycle);
+                delay(20);
+            }
+
+            delay(50);
         }
+        max_light_level=0;
     }
     vTaskDelete(NULL);
 }
 
 
-void pwm_up_down_esp32(boolean direction_up) {
+void dim_light_up_down_esp32(boolean direction_up) {
 
     xTaskCreate(
-            run_up_down_task,    // Function that should be called
-            "run_up_down_task",  // Name of the task (for debugging)
-            1000,            // Stack size (bytes)
+            dim_light_up_down_task,    // Function that should be called
+            "dim_light_up_down_task",  // Name of the task (for debugging)
+            10000,            // Stack size (bytes)
             (void *) &direction_up,            // Parameter to pass
-            1,               // Task priority
+            0,               // Task priority
             NULL             // Task handle
     );
 }
-
 
 
 void helloValue(GxEPD2_GFX &display, double v, int digits) {

@@ -1,6 +1,6 @@
 #!/bin/bash
-project_id='43692'
-project_name='ff_command_set_final'
+project_id='95322'
+project_name='ff_command_set_final v1'
 set -e
 echo "Start Download..."
 curl --request GET \
