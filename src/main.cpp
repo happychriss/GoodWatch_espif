@@ -74,12 +74,41 @@ esp_sleep_wakeup_cause_t wakeup_reason;
 bool b_pir_wave = false;
 
 
+void battery_sent();
+
 #define CLOCK_INTERRUPT_PIN 39
 
 void IRAM_ATTR Ext_INT1_ISR() {
     b_pir_wave = true;// Do Something ...
 
 }
+
+void battery_sent() {
+    DPL("Sent battery update to GW Server");
+    int adc = analogRead(BATTERY_VOLTAGE);
+    double BatteryVoltage;
+    BatteryVoltage = (adc * 7.445) / 4096;
+    DP("Battery V: ");
+    DPL(BatteryVoltage);
+
+    SetupWifi_SNTP();
+    WiFiClient client;
+    HTTPClient http;
+    http.begin(client, "http://192.168.1.110:8088/voltage");
+    http.addHeader("Content-Type", "application/json");
+    String source= "\"source\":\"GW_Development\"";
+    String voltage = "\"voltage\":\""+String(BatteryVoltage,2)+"\"";
+    String httpRequestData="{"+source+","+voltage+"}";
+    DP("RequestString:");
+    DPL(httpRequestData);
+    int httpResponseCode = http.POST(httpRequestData);
+    DP("HTTP Response code: ");
+    DPL(httpResponseCode);
+
+    // Free resources
+    http.end();
+}
+
 
 
 void setup() {
@@ -196,9 +225,16 @@ void loop() {
             DPL("!!! RTC Wakeup after 5min");
             rtc_watch.clearAlarm(ALARM1_5_MIN);
             rtc_watch.disableAlarm(ALARM1_5_MIN);
-            rtsSetEspTime(rtc_watch.now());
+            DateTime now_time=rtc_watch.now();
+            rtsSetEspTime(now_time);
             display.init(DEBUG_DISPLAY, false);
             PaintWatch(display, true, false);
+
+            /* measure battery performance */
+            if (now_time.hour()==22 && now_time.minute()==35) {
+                battery_sent();
+
+            }
         }
 
         /* Alarm wakeup  ***************************************************************************/
@@ -243,15 +279,15 @@ void loop() {
         DistanceSensorSetup();
         uint16_t avg_proximity_data = distance_sensor.readRangeSingleMillimeters();
         DPF("*** Distance[mm]: %i\n", avg_proximity_data);
+
         dim_light_up_down_esp32(true);
 
 /*      // **********************************************************************************************
         // VERY CLOSE - Data Acuisition and OTA Update **************************************************
         // ***********************************************************************************************/
 
-        if (avg_proximity_data < 30) { //hand is very close
+        if (avg_proximity_data < 30) { //hand is very close ---------- disabled ----------------------------
             DPL("Proximity-Check: Very close: Config Goodwatch");
-            SetupWifi_SNTP();
             display.init(DEBUG_DISPLAY);
             ConfigGoodWatch(display);
             display.clearScreen();
@@ -270,7 +306,10 @@ void loop() {
             DPL("Proximity-Check: No Hand: Quick Time");
             display.init(DEBUG_DISPLAY, false);
             PaintQuickTime(display, false);
+//            battery_sent();
         }
+
+        dim_light_up_down_esp32(false);
 
         // Give the PIR time to go down, before going to sleep
         while (digitalRead(PIR_INT) == true) {
@@ -287,11 +326,17 @@ void loop() {
 
     DPL("Prepare deep sleep");
 
-    dim_light_up_down_esp32(false);
+    int wait_count=0;
     while (max_light_level!=0 or !b_audio_finished) {
         DPL("WAIT for Light or Sound to finish");
+        wait_count++;
+        if (wait_count>200) {
+            DPL("TimeOut on waiting - something wrong here - BREAK Loop");
+            break;
+        }
         delay(10);
     }; //wait for the light to go off
+
     digitalWrite(DISPLAY_AND_SOUND_POWER, LOW);
 
 //    esp_sleep_enable_timer_wakeup(sleep_sec * 1000 * 1000);

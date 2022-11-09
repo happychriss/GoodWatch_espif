@@ -1,6 +1,6 @@
 #!/bin/bash
-project_id='95322'
-project_name='ff_command_set_final v1'
+project_id='152870'
+
 set -e
 echo "Start Download..."
 curl --request GET \
@@ -11,7 +11,7 @@ curl --request GET \
 unzip -q arduino_model.zip -d ./src/edgeimpulse_tmp
 rm -r ./src/edgeimpulse/
 mkdir ./src/edgeimpulse
-mv ./src/edgeimpulse_tmp/ff_command_set_final_inferencing/src/* ./src/edgeimpulse
+mv ./src/edgeimpulse_tmp/gw_2022_myvoice_inferencing/src/* ./src/edgeimpulse
 rm -r ./src/edgeimpulse_tmp/
 rm ./arduino_model.zip
 find ./src/edgeimpulse -type f -exec touch {} +

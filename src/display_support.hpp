@@ -32,7 +32,7 @@
 
 
 uint16_t ambient_light=0;
-uint16_t max_light_level;
+uint16_t max_light_level=0;
 
 extern VL6180X distance_sensor;
 
@@ -129,6 +129,7 @@ void pwm_up_down(boolean direction_up, const uint16_t pwm_table[], int16_t size,
     }
 }
 
+
 void dim_light_up_down_task(void *parameter) {
 #define MAX_LIGHT_LEVEL 128
 
@@ -136,6 +137,7 @@ void dim_light_up_down_task(void *parameter) {
     const int freq = 120;
     const int ledChannel = 0;
     const int resolution = 8;
+
 
     // enable light
     if (direction_up) {
@@ -149,7 +151,7 @@ void dim_light_up_down_task(void *parameter) {
         else max_light_level=0;
         DPL("Dim Light ON:");
         DPF("*** Ambient Light:%i\n", ambient_light);
-        DPF("*** Light Level:%i\n", max_light_level);
+        DPF("*** Max Light Level:%i\n", max_light_level);
 
         if (max_light_level!=0) {
             digitalWrite(DISPLAY_AND_SOUND_POWER, HIGH);

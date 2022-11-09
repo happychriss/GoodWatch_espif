@@ -4,14 +4,14 @@
 
 // clang-format on
 #include <inference_sound.h>
-#include "edgeimpulse/ff_command_set_final_inferencing.h"
-
+#include "edgeimpulse/gw_2022_myvoice_inferencing.h"
 
 
 #undef DEBUG_PRINT
 
 
 bool b_voice_init = false;
+bool b_capture_samples_task = false;
 TaskHandle_t xHandle = NULL;
 
 /**
@@ -56,7 +56,7 @@ void i2s_init(void) {
             //  The actual PCM audio data is 24 bits wide, is signed and is stored in little-endian format with 8 bits of left-justified 0 "padding".
             .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
 
-            .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT, // was I2S_CHANNEL_FMT_RIGHT_LEFT
+            .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT, // was I2S_CHANNEL_FMT_RIGHT_LEFT //
             .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_I2S),
             .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
             .dma_buf_count = 4,
@@ -100,24 +100,22 @@ void addSample(int16_t sample) {
 // https://github.com/atomic14/ICS-43434-breakout-board/tree/main/sketch
 void CaptureSamples(void *arg) {
 
-     DP("CaptureSamples - Running on Core:");
+    DP("CaptureSamples - Running on Core:");
     DPL(xPortGetCoreID());
-
-
-
-    while (true) {
+    b_capture_samples_task = true;
+    ESP_ERROR_CHECK(i2s_start(I2S_MICRO));
+    while (b_capture_samples_task) {
         // wait for some data to arrive on the queue
         i2s_event_t evt;
         if (xQueueReceive(m_i2sQueue, &evt, portMAX_DELAY) == pdPASS) {
 
             if (evt.type == I2S_EVENT_RX_DONE) {
                 {
-
                     size_t bytes_read = 0;
                     // read data from the I2S peripheral
                     do {
 
-                        uint8_t i2s_data[1024];
+                        uint8_t i2s_data[1024] = {0};
                         // read from i2s
 
                         ESP_ERROR_CHECK(i2s_read(
@@ -139,9 +137,14 @@ void CaptureSamples(void *arg) {
                     } while (bytes_read > 0);
                 }
             }
+        } else {
+            DPL("xQueueReceive error");
         }
 
     }
+    ESP_ERROR_CHECK(i2s_stop(I2S_MICRO));
+    DP("Finish CaptureSamples Task ");
+    vTaskDelete(xHandle);
 
 }
 
@@ -262,23 +265,29 @@ void FinishVoiceCommands() {
 }
 
 void VoiceAcquisitionTEST() {
-
+    SetupWifi_SNTP();
     DPL("Start Voice Capture");
+    ESP_ERROR_CHECK(i2s_start(I2S_MICRO));
+    DPL("*************Start Task************");
+    xTaskCreatePinnedToCore(CaptureSamples, "CaptureSamples", 1024 * 32, NULL, 1, &xHandle, 0);
 
     while (true) {
         bool m = false;
+        DPL("Start Loop");
         while (!m) {
             m = microphone_inference_record();
             // todo uncomment error message
             //          DPL("ERROR: Start Inference - microphone_inference_record");
             // ei_printf("ERR: Failed to record audio...\n");
             delay(1);
-            DP(".");
+            DP("@");
         }
         DP("+");
         sendData((uint8_t *) &inference.buffers[inference.buf_select ^ 1][0], EI_CLASSIFIER_SLICE_SIZE * 2);
         DP("-");
     }
+    DPL("End Voice Capture - should never be here.");
+
 }
 
 
@@ -290,20 +299,23 @@ int GetVoiceCommand() {
     xTaskCreatePinnedToCore(CaptureSamples, "CaptureSamples", 1024 * 32, NULL, 1, &xHandle, 0);
 
     int print_results = 0;
-    short result_state = STATE_NOTHING;
+
     float values[EI_CLASSIFIER_LABEL_COUNT] = {0.0};
 #define TIMEOUT 70
-    int timeout_count=0;
-    int final_result=0;
+    int timeout_count = 0;
+    int final_result = -1;
 
-    while (true) {
+    int best_result_idx = -1;
+    int best_result_count = 0;
+
+    while (timeout_count < TIMEOUT) {
 
         bool m = false;
 
         while (!m) {
             m = microphone_inference_record();
             // todo uncomment error message
-            //          DPL("ERROR: Start Inference - microphone_inference_record");
+//            DPL("ERROR: Start Inference - microphone_inference_record");
             // ei_printf("ERR: Failed to record audio...\n");
             delay(1);
         }
@@ -313,25 +325,26 @@ int GetVoiceCommand() {
         signal.get_data = &microphone_audio_signal_get_data;
         ei_impulse_result_t result = {0};
 
-        EI_IMPULSE_ERROR r = run_classifier_continuous(&signal, &result, debug_nn);
+        EI_IMPULSE_ERROR r = run_classifier_continuous(&signal, &result, debug_nn, false);
         if (r != EI_IMPULSE_OK) {
             ei_printf("ERR: Failed to run classifier (%d)\n", r);
-            final_result=INF_ERROR;
+            final_result = INF_ERROR;
             break;
         }
 
         if (++print_results >= (0)) {
 //print the predictions
-//       ei_printf("Predictions "); ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)", result.timing.dsp, result.timing.classification, result.timing.anomaly);
-            //          ei_printf(": \n");
+//            ei_printf("Predictions ");
+//            ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)", result.timing.dsp, result.timing.classification, result.timing.anomaly);
+//            ei_printf(": \n");
+
             bool b_found_result = false;
             int max_value_idx = -1;
             float max_value = 0;
 
-            // Find the best value, and note if more then 85%
+            // Find the best value, and note if more than 85%
             for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
-                if ((result.classification[ix].value > 0.85) && (result.classification[ix].label[0] != 'N')) {
-                    DPF("\nResults:\n");
+                if (result.classification[ix].value > 0.90) {
                     b_found_result = true;
                     if (result.classification[ix].value > max_value) {
                         max_value = result.classification[ix].value;
@@ -340,6 +353,13 @@ int GetVoiceCommand() {
                 }
             }
 
+            if (b_found_result)
+                if (result.classification[max_value_idx].label[0] == 'r') {
+                    b_found_result = false;
+                    DPL("r");
+                } else {
+                    DPL(".");
+                }
             // Print list of result values
 #ifdef DEBUG_PRINT
             if (b_found_result) {
@@ -355,64 +375,52 @@ int GetVoiceCommand() {
 #endif
 
             if (b_found_result) {
-                result_state = STATE_FOUND;
-                values[max_value_idx] = values[max_value_idx] + max_value;
-                timeout_count=0;
-            } else {
-                if (timeout_count>TIMEOUT) {
-                    DPL("Inference Timeout - return NO");
-                    final_result=ANSWER_NO;
-                    break;
-
-                }
-
-                switch (result_state) {
-                    case STATE_NOTHING:
-                        result_state = STATE_NOTHING;
-                        timeout_count++;
+                if (best_result_idx == max_value_idx) {
+                    best_result_count++;
+                    if (best_result_count == 2) {
+                        final_result = best_result_idx;
+                        DPL("<<<<<<< VALUE FOUND");
                         break;
-                    case STATE_FOUND:
-                        result_state = STATE_FOUND_MISSED_ONE;
-                        break;
-                    case STATE_FOUND_MISSED_ONE:
-                        result_state = STATE_FOUND_MISSED_TWO;
-                        break;
-                    case STATE_FOUND_MISSED_TWO:
-                        result_state = STATE_RESOLVED;
-                        break;
-                    default:
-                        DPL("aaaaaaaaaaaaaaaaargh");
-                        DPL(result_state);
-                }
-            }
-
-            if (result_state == STATE_RESOLVED) {
-                int final_value_idx = -1;
-                float final_value = 0.0;
-
-                for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
-                    if (values[ix] > final_value) {
-                        final_value = values[ix];
-                        final_value_idx = ix;
                     }
+                } else {
+                    best_result_idx = max_value_idx;
+                    best_result_count = 0;
                 }
-                DP("\n------------> ");
-                DPF("Result: %i - %f\n", final_value_idx, final_value);
-                final_result=final_value_idx;
-                break;
+                DP(result.classification[best_result_idx].label[0]);
+                DP("-");
+                DPL(best_result_count);
+
+            } else {
+                best_result_idx = -1;
+                best_result_count = 0;
+                timeout_count++;
 
             }
+
 //            ei_printf("***********************    %s: %.5f", ei_classifier_inferencing_categories[final_value_idx], my_final_value);
 //            memset(values, 0, sizeof(values));
 
         }
     }
+/*
+
     if (xHandle != nullptr) {
         DPL("Terminate Task!!");
         vTaskDelete(xHandle);
-        xHandle= nullptr;
+        xHandle = nullptr;
         ESP_ERROR_CHECK(i2s_stop(I2S_MICRO));
     }
+*/
+
+    //Finish Capture Sample Task
+    b_capture_samples_task = false;
+
+    if (timeout_count==TIMEOUT) {
+        DPL("Timeout - setting result to N");
+    }
+    if (final_result == -1) final_result = 11; //"N"
+    DP("!!!!!!!!!!!!!!!!!! Final Result: ");
+    DPL(final_result);
     return final_result;
 
 }

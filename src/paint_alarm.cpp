@@ -467,7 +467,8 @@ void ConfigGoodWatch(GxEPD2_GFX &d) {
         PL(d, 3 * PT12_HEIGHT, 1, "1: Record Sound", false, true);
         PL(d, 4 * PT12_HEIGHT, 1, "2: OTA Update", false, true);
         PL(d, 5 * PT12_HEIGHT, 1, "3: Play Music", false, true);
-        PL(d, 6 * PT12_HEIGHT + PT12_BREAK, 1, battery, false, true);
+        PL(d, 6 * PT12_HEIGHT, 1, "4: Start Inference", false, true);
+        PL(d, 7 * PT12_HEIGHT + PT12_BREAK, 1, battery, false, true);
     } while (d.nextPage());
 
     InitVoiceCommands();
@@ -483,6 +484,7 @@ void ConfigGoodWatch(GxEPD2_GFX &d) {
         VoiceAcquisitionTEST();
     }
 
+    // Ota Update
     if (value_idx == 2) {
         DPL("Start OTA Update!!!");
         ArduinoOTA
@@ -529,6 +531,7 @@ void ConfigGoodWatch(GxEPD2_GFX &d) {
         }
     }
 
+    // Play music
     if (value_idx == 3) {
 
         digitalWrite(DISPLAY_AND_SOUND_POWER, HIGH);
@@ -541,5 +544,18 @@ void ConfigGoodWatch(GxEPD2_GFX &d) {
         }
 
     }
+
+    if (value_idx == 4) {
+        PL(d, 3 * PT12_HEIGHT, 1, "!! Inference Start !!", true, true);
+        PL(d, 4 * PT12_HEIGHT, 1, "!! Reset to stop !!", true, true);
+        InitVoiceCommands();
+        int value_idx;
+        while(true) {
+            value_idx = GetVoiceCommand();
+            DP(">>>>>>>>>>>>>Result:");DPL(value_idx);
+
+        }
+    }
+
 
 }
