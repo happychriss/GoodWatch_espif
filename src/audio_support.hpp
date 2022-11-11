@@ -46,7 +46,7 @@ void PlayWakeupSong() {
         DPL("!!!!!  SPIFF Mount Failed !!!!!!!!!!!");
     }
 
-    audio.setPinout(I2S_NUM_1_BCLK, I2S_NUM_1_LRC, I2S_NUM_1_DOUT);
+//    audio.setPinout(I2S_NUM_1_BCLK, I2S_NUM_1_LRC, I2S_NUM_1_DOUT);
     audio.setVolume(0); // 0...21
     audio.forceMono(true);
     audio.connecttoFS(SPIFFS, "/carmen.mp3");

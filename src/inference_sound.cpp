@@ -1,4 +1,5 @@
 //
+//
 // Created by development on 22.01.21.
 //
 
@@ -298,7 +299,7 @@ int GetVoiceCommand() {
     DPL("*************Start Task************");
     xTaskCreatePinnedToCore(CaptureSamples, "CaptureSamples", 1024 * 32, NULL, 1, &xHandle, 0);
 
-    int print_results = 0;
+    int process_results = 0;
 
     float values[EI_CLASSIFIER_LABEL_COUNT] = {0.0};
 #define TIMEOUT 70
@@ -332,7 +333,7 @@ int GetVoiceCommand() {
             break;
         }
 
-        if (++print_results >= (0)) {
+        if (++process_results >= 7) {
 //print the predictions
 //            ei_printf("Predictions ");
 //            ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)", result.timing.dsp, result.timing.classification, result.timing.anomaly);
@@ -344,7 +345,7 @@ int GetVoiceCommand() {
 
             // Find the best value, and note if more than 85%
             for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
-                if (result.classification[ix].value > 0.90) {
+                if (result.classification[ix].value > 0.9899) {
                     b_found_result = true;
                     if (result.classification[ix].value > max_value) {
                         max_value = result.classification[ix].value;
@@ -374,11 +375,19 @@ int GetVoiceCommand() {
             }
 #endif
 
+
             if (b_found_result) {
+
+
                 if (best_result_idx == max_value_idx) {
                     best_result_count++;
-                    if (best_result_count == 2) {
+                    if (best_result_count == 1) {
                         final_result = best_result_idx;
+                        DP(result.classification[best_result_idx].label[0]);
+                        DP("-");
+                        DP(best_result_count);
+                        DP("-");
+                        DP(result.classification[best_result_idx].value);
                         DPL("<<<<<<< VALUE FOUND");
                         break;
                     }
@@ -388,7 +397,10 @@ int GetVoiceCommand() {
                 }
                 DP(result.classification[best_result_idx].label[0]);
                 DP("-");
-                DPL(best_result_count);
+                DP(best_result_count);
+                DP("-");
+                DPL(result.classification[best_result_idx].value);
+
 
             } else {
                 best_result_idx = -1;
@@ -400,7 +412,7 @@ int GetVoiceCommand() {
 //            ei_printf("***********************    %s: %.5f", ei_classifier_inferencing_categories[final_value_idx], my_final_value);
 //            memset(values, 0, sizeof(values));
 
-        }
+        } else {DPL("W");}
     }
 /*
 
@@ -415,7 +427,7 @@ int GetVoiceCommand() {
     //Finish Capture Sample Task
     b_capture_samples_task = false;
 
-    if (timeout_count==TIMEOUT) {
+    if (timeout_count == TIMEOUT) {
         DPL("Timeout - setting result to N");
     }
     if (final_result == -1) final_result = 11; //"N"

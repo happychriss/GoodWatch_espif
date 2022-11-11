@@ -553,7 +553,7 @@ void ConfigGoodWatch(GxEPD2_GFX &d) {
         while(true) {
             value_idx = GetVoiceCommand();
             DP(">>>>>>>>>>>>>Result:");DPL(value_idx);
-
+            delay(100);
         }
     }
 

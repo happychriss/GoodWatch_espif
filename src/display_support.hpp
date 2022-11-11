@@ -32,9 +32,10 @@
 
 
 uint16_t ambient_light=0;
-uint16_t max_light_level=0;
+extern int max_light_level;
 
 extern VL6180X distance_sensor;
+
 
 enum vl6180x_als_gain { // Data sheet shows gain values as binary list
 
@@ -99,7 +100,7 @@ void DistanceSensorSetup() {
     distance_sensor.setScaling(2); // distance
     distance_sensor.writeReg(VL6180X::SYSALS__ANALOGUE_GAIN, (0x40 | GAIN_40));// ALS
     distance_sensor.writeReg(VL6180X::SYSRANGE__MAX_CONVERGENCE_TIME, 30);
-    distance_sensor.writeReg16Bit(VL6180X::SYSALS__INTEGRATION_PERIOD, 0x18F); //400 ms
+    distance_sensor.writeReg16Bit(VL6180X::SYSALS__INTEGRATION_PERIOD, 0x63); //400 ms 0x63 0x18F
 //        distance_sensor.writeReg(VL6180X::FIRMWARE__RESULT_SCALER,0x07);
     distance_sensor.setTimeout(500);
 }
@@ -146,10 +147,10 @@ void dim_light_up_down_task(void *parameter) {
 
         ambient_light = distance_sensor.readAmbientSingle();
 
-        if (ambient_light<15) {max_light_level=MAX_LIGHT_LEVEL/2;}
-        else if (ambient_light<80)  {max_light_level=MAX_LIGHT_LEVEL;}
+        if (ambient_light<2) {max_light_level=MAX_LIGHT_LEVEL/2;}
+        else if (ambient_light<10)  {max_light_level=MAX_LIGHT_LEVEL;}
         else max_light_level=0;
-        DPL("Dim Light ON:");
+        DPL("*Dim Light ON*");
         DPF("*** Ambient Light:%i\n", ambient_light);
         DPF("*** Max Light Level:%i\n", max_light_level);
 
@@ -165,9 +166,9 @@ void dim_light_up_down_task(void *parameter) {
 
     // disable light
     } else {
-        DPL("Dim Light OFF:");
+        DPL("*Dim Light OFF*");
         DPF("*** Light Level:%i\n", max_light_level);
-        if (max_light_level!= 0) {
+        if (max_light_level> 0) {
 
             for (int dutyCycle = max_light_level; dutyCycle >= 0; dutyCycle--) {
                 // changing the LED brightness with PWM

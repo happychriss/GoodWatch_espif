@@ -61,6 +61,9 @@ QueueHandle_t m_i2sQueue;
 bool b_audio_end_of_mp3 = false;
 bool b_audio_finished = true;
 
+// light sensor
+int max_light_level = -1;
+
 Audio audio;
 
 RTC_DATA_ATTR bool b_watch_refreshed = false;
@@ -148,14 +151,13 @@ void setup() {
 
 
 
-
 }
 
 /* MAIN LOOP *********************************************************************************************/
 
 void loop() {
     DPL("****** Main Loop ***********");
-
+    max_light_level=-1;
     wakeup_reason = print_wakeup_reason();
 
     if (!rtc_watch.begin()) {
@@ -173,6 +175,12 @@ void loop() {
     BatteryVoltage = (adc * 7.445) / 4096;
     DP("Battery V: ");
     DPL(BatteryVoltage);
+
+// Audio Initi
+    DP("Audio Init..");
+    audio.setPinout(I2S_NUM_1_BCLK, I2S_NUM_1_LRC, I2S_NUM_1_DOUT);
+    audio.setVolume(0); // 0...21
+    DPL("done!");
 
     /*
         // **********************************************************************************************
@@ -273,42 +281,60 @@ void loop() {
        // PIR Sensor Wakeup*****************************************************************************
        // ***********************************************************************************************/
 
+
+
     if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0) {
-
         DPL("!!!! PIR Sensor Wakeup !!!! ");
-        DistanceSensorSetup();
-        uint16_t avg_proximity_data = distance_sensor.readRangeSingleMillimeters();
-        DPF("*** Distance[mm]: %i\n", avg_proximity_data);
 
+        max_light_level=-1;
         dim_light_up_down_esp32(true);
+
+        DP("!!!! Wait for Light Level measurement: ");
+        while (max_light_level<0) {
+            delay(1);
+            DP(".");
+        }
+        DP("LightLevel: ");DPL(max_light_level);
+        delay(10);
+
+        if (max_light_level>0) {
+            DPL("*** Its dark outside - light is on - not doing anyhing");
+            delay(2000);
+
+        } else {
+
+            DistanceSensorSetup();
+            uint16_t avg_proximity_data = distance_sensor.readRangeSingleMillimeters();
+            DPF("*** Distance[mm]: %i\n", avg_proximity_data);
+
 
 /*      // **********************************************************************************************
         // VERY CLOSE - Data Acuisition and OTA Update **************************************************
         // ***********************************************************************************************/
 
-        if (avg_proximity_data < 30) { //hand is very close ---------- disabled ----------------------------
-            DPL("Proximity-Check: Very close: Config Goodwatch");
-            display.init(DEBUG_DISPLAY);
-            ConfigGoodWatch(display);
-            display.clearScreen();
-            PaintWatch(display, false, false);
-        } else if (avg_proximity_data < 70) { //hand a bit away
+            if (avg_proximity_data < 30) { //hand is very close ---------- disabled ----------------------------
+                DPL("Proximity-Check: Very close: Config Goodwatch");
+                display.init(DEBUG_DISPLAY);
+                ConfigGoodWatch(display);
+                display.clearScreen();
+                PaintWatch(display, false, false);
+            } else if (avg_proximity_data < 70) { //hand a bit away and its not dark
 
 /*          // **********************************************************************************************
             // Medium Close - Show Alarm Screen ********** **************************************************
             // ***********************************************************************************************/
 
-            DPL("Proximity-Check: A bit away: Program Alarm");
-            display.init(DEBUG_DISPLAY, true);
-            ProgramAlarm(display);
-            PaintWatch(display, false, false);
-        } else {
-            DPL("Proximity-Check: No Hand: Quick Time");
-            display.init(DEBUG_DISPLAY, false);
-            PaintQuickTime(display, false);
+                DPL("Proximity-Check: A bit away: Program Alarm");
+                display.init(DEBUG_DISPLAY, true);
+                ProgramAlarm(display);
+                PaintWatch(display, false, false);
+            } else { // hand away, but not dark
+                DPL("Proximity-Check: No Hand: Quick Time");
+                display.init(DEBUG_DISPLAY, false);
+                PaintQuickTime(display, false);
 //            battery_sent();
+            }
         }
-
         dim_light_up_down_esp32(false);
 
         // Give the PIR time to go down, before going to sleep
@@ -327,7 +353,8 @@ void loop() {
     DPL("Prepare deep sleep");
 
     int wait_count=0;
-    while (max_light_level!=0 or !b_audio_finished) {
+
+    while (max_light_level>0 or !b_audio_finished) {
         DPL("WAIT for Light or Sound to finish");
         wait_count++;
         if (wait_count>200) {
