@@ -145,7 +145,7 @@ void CaptureSamples(void *arg) {
     }
     ESP_ERROR_CHECK(i2s_stop(I2S_MICRO));
     DP("Finish CaptureSamples Task ");
-    vTaskDelete(xHandle);
+    vTaskDelete(NULL);
 
 }
 
@@ -306,7 +306,7 @@ int GetVoiceCommand() {
     int timeout_count = 0;
     int final_result = -1;
 
-    int best_result_idx = -1;
+    int best_value_idx = -1;
     int best_result_count = 0;
 
     while (timeout_count < TIMEOUT) {
@@ -333,29 +333,29 @@ int GetVoiceCommand() {
             break;
         }
 
-        if (++process_results >= 7) {
+        if (++process_results >= 3) {
 //print the predictions
 //            ei_printf("Predictions ");
 //            ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)", result.timing.dsp, result.timing.classification, result.timing.anomaly);
 //            ei_printf(": \n");
 
             bool b_found_result = false;
-            int max_value_idx = -1;
-            float max_value = 0;
+            int found_value_idx = -1;
+            float found_value = 0;
 
             // Find the best value, and note if more than 85%
             for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
-                if (result.classification[ix].value > 0.9899) {
+                if (result.classification[ix].value > 0.98) {
                     b_found_result = true;
-                    if (result.classification[ix].value > max_value) {
-                        max_value = result.classification[ix].value;
-                        max_value_idx = ix;
+                    if (result.classification[ix].value > found_value) {
+                        found_value = result.classification[ix].value;
+                        found_value_idx = ix;
                     }
                 }
             }
 
             if (b_found_result)
-                if (result.classification[max_value_idx].label[0] == 'r') {
+                if (result.classification[found_value_idx].label[0] == 'r') {
                     b_found_result = false;
                     DPL("r");
                 } else {
@@ -378,32 +378,36 @@ int GetVoiceCommand() {
 
             if (b_found_result) {
 
+                if ((best_value_idx == found_value_idx) || (found_value_idx == 11)) { //did I find the same value before
+                    best_value_idx = found_value_idx;
 
-                if (best_result_idx == max_value_idx) {
                     best_result_count++;
-                    if (best_result_count == 1) {
-                        final_result = best_result_idx;
-                        DP(result.classification[best_result_idx].label[0]);
+
+                    if ( ((best_result_count == 1) && (best_value_idx != 1) && (best_value_idx != 3)) || // all values need to catches, except 1 and 3, need 3
+                            (best_result_count == 2 ) ||
+                            (best_value_idx == 11) ){ // nein found
+                        final_result = best_value_idx;
+                        DP(result.classification[best_value_idx].label[0]);
                         DP("-");
                         DP(best_result_count);
-                        DP("-");
-                        DP(result.classification[best_result_idx].value);
+                        DP("- ");
+                        DP(result.classification[best_value_idx].value);
                         DPL("<<<<<<< VALUE FOUND");
                         break;
                     }
                 } else {
-                    best_result_idx = max_value_idx;
+                    best_value_idx = found_value_idx;
                     best_result_count = 0;
                 }
-                DP(result.classification[best_result_idx].label[0]);
+                DP(result.classification[found_value_idx].label[0]);
                 DP("-");
                 DP(best_result_count);
                 DP("-");
-                DPL(result.classification[best_result_idx].value);
+                DPL(result.classification[found_value_idx].value);
 
 
             } else {
-                best_result_idx = -1;
+                best_value_idx = -1;
                 best_result_count = 0;
                 timeout_count++;
 
@@ -426,6 +430,7 @@ int GetVoiceCommand() {
 
     //Finish Capture Sample Task
     b_capture_samples_task = false;
+    delay(50);
 
     if (timeout_count == TIMEOUT) {
         DPL("Timeout - setting result to N");

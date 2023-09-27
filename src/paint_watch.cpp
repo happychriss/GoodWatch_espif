@@ -8,7 +8,7 @@
 
 #include "paint_watch.h"
 #include "support.h"
-#include "custom_fonts/FreeSansNumOnly70.h"
+#include "fonts/FreeSansNumOnly70.h"
 #include "rtc_support.h"
 #include "paint_alarm.h"
 #include <Fonts/FreeSans24pt7b.h>

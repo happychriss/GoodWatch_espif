@@ -18,11 +18,13 @@
 #define DPD(x)     Serial.print (x, DEC)
 #define DPL(x)  Serial.println (x)
 #define DPF(...) Serial.printf (__VA_ARGS__)
+#define DP2(x)     waitAndPrint (x)
 #else
 #define DP(x)
 #define DPD(x)
 #define DPL(x)
 #define DPF(...)
+#define DP2(x)
 #endif
 
 int SerialKeyWait();
@@ -34,6 +36,6 @@ int SerialKeyWait();
 
  esp_sleep_wakeup_cause_t print_wakeup_reason();
 
-
+void waitAndPrint(const char* message);
 
 #endif //MS_ESP32_SUPPORT_H

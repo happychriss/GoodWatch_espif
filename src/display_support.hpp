@@ -24,7 +24,7 @@
 #include "fonts/FreeSansNumOnly55.h"
 */
 
-#include "custom_fonts/FreeSansNumOnly70.h"
+#include "fonts/FreeSansNumOnly70.h"
 #include "VL6180X.h"
 #include <global_hardware.h>
 
@@ -145,6 +145,7 @@ void dim_light_up_down_task(void *parameter) {
         ledcSetup(ledChannel, freq, resolution);
         ledcAttachPin(DISPLAY_CONTROL, ledChannel);
 
+        DPL("*Start Light Measurement*");
         ambient_light = distance_sensor.readAmbientSingle();
 
         if (ambient_light<2) {max_light_level=MAX_LIGHT_LEVEL/2;}
@@ -202,6 +203,7 @@ void helloValue(GxEPD2_GFX &display, double v, int digits) {
     Serial.println(v);
     display.setRotation(0);
     display.setFont(&FreeSans70pt7b);
+
     display.setTextColor(GxEPD_BLACK);
     StreamString valueString;
     valueString.print(v, digits);

@@ -13,6 +13,8 @@
 #define PT12_BREAK (PT12_HEIGHT/2)
 #define PT12_WIDTH 20
 
+
+
 #define ALARM_NUMBERS_DISPLAY 5
 #define TIME_COLUMN 7 // which column the time to display
 #define WAKE_HOURS_COLUMN (TIME_COLUMN + 5)
@@ -35,6 +37,7 @@
 #define ANSWER_YES 10
 #define ANSWER_NO 11
 #define ANSWER_SET 9
+#define ANSWER_TIMEOUT -2
 
 
 enum enum_alarm_type {

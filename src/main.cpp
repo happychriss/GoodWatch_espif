@@ -19,6 +19,7 @@
 #include <lwip/apps/sntp.h>
 #include "Audio.h"
 #include "VL6180X.h"
+#include "paint_weather.h"
 
 // custom
 #include <display_support.hpp>
@@ -37,6 +38,10 @@
 #define DATA_ACQUISITION
 #define DEBUG_DISPLAY 0 //115200
 
+
+// esptool to reset Goodwacht
+// pip install esptool
+// esptool.py --chip esp32 --port "/dev/ttyUSB0" --baud 860800 --before default_reset  read_mac
 
 //********** Global Variables ***************************************************
 // Wake Up Sensor
@@ -99,9 +104,9 @@ void battery_sent() {
     HTTPClient http;
     http.begin(client, "http://192.168.1.110:8088/voltage");
     http.addHeader("Content-Type", "application/json");
-    String source= "\"source\":\"GW_Development\"";
-    String voltage = "\"voltage\":\""+String(BatteryVoltage,2)+"\"";
-    String httpRequestData="{"+source+","+voltage+"}";
+    String source = "\"source\":\"GW_Development\"";
+    String voltage = "\"voltage\":\"" + String(BatteryVoltage, 2) + "\"";
+    String httpRequestData = "{" + source + "," + voltage + "}";
     DP("RequestString:");
     DPL(httpRequestData);
     int httpResponseCode = http.POST(httpRequestData);
@@ -111,7 +116,6 @@ void battery_sent() {
     // Free resources
     http.end();
 }
-
 
 
 void setup() {
@@ -148,16 +152,13 @@ void setup() {
     }
 
 
-
-
-
 }
 
 /* MAIN LOOP *********************************************************************************************/
 
 void loop() {
     DPL("****** Main Loop ***********");
-    max_light_level=-1;
+    max_light_level = -1;
     wakeup_reason = print_wakeup_reason();
 
     if (!rtc_watch.begin()) {
@@ -233,13 +234,13 @@ void loop() {
             DPL("!!! RTC Wakeup after 5min");
             rtc_watch.clearAlarm(ALARM1_5_MIN);
             rtc_watch.disableAlarm(ALARM1_5_MIN);
-            DateTime now_time=rtc_watch.now();
+            DateTime now_time = rtc_watch.now();
             rtsSetEspTime(now_time);
             display.init(DEBUG_DISPLAY, false);
             PaintWatch(display, true, false);
 
             /* measure battery performance */
-            if (now_time.hour()==22 && now_time.minute()==35) {
+            if (now_time.hour() == 22 && now_time.minute() == 35) {
                 battery_sent();
 
             }
@@ -286,39 +287,67 @@ void loop() {
     if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0) {
         DPL("!!!! PIR Sensor Wakeup !!!! ");
 
-        max_light_level=-1;
+        max_light_level = -1;
         dim_light_up_down_esp32(true);
 
-        DP("!!!! Wait for Light Level measurement: ");
-        while (max_light_level<0) {
-            delay(1);
-            DP(".");
+        DP("!!!! Wait for Light Level measurement....");
+        int wait_max_light_level=0;
+        while (max_light_level < 0 and wait_max_light_level<500) {
+            delay(2);
+            wait_max_light_level++;
+//            DPL(wait_max_light_level);
         }
-        DP("LightLevel: ");DPL(max_light_level);
+        if (wait_max_light_level==500) {
+            DPL("Warning: Timeout on light level measurement I2C");
+        }
+        DP("LightLevel: ");
+        DPL(max_light_level);
         delay(10);
 
-        if (max_light_level>0) {
+        if (max_light_level > 0) {
             DPL("*** Its dark outside - light is on - not doing anyhing");
             delay(2000);
 
         } else {
-
+#define ZERO_OUT_DISTANCE 10
             DistanceSensorSetup();
             uint16_t avg_proximity_data = distance_sensor.readRangeSingleMillimeters();
             DPF("*** Distance[mm]: %i\n", avg_proximity_data);
 
+            if (avg_proximity_data < ZERO_OUT_DISTANCE) {
+                avg_proximity_data = 500;
+                DPL("    Zero-Out TesaFilm");
+            } else {
+                DPL("*** Second Distance");
+                delay(500);
+                avg_proximity_data = distance_sensor.readRangeSingleMillimeters();
+                DPF("*** Distance[mm]: %i\n", avg_proximity_data);
+                if (avg_proximity_data < ZERO_OUT_DISTANCE) {
+                    avg_proximity_data = 500;
+                    DPL("    Zero-Out TesaFilm");
+                }
+            }
+            DPF("*** FINAL Distance[mm]: %i\n", avg_proximity_data);
 
 /*      // **********************************************************************************************
         // VERY CLOSE - Data Acuisition and OTA Update **************************************************
         // ***********************************************************************************************/
 
-            if (avg_proximity_data < 30) { //hand is very close ---------- disabled ----------------------------
+            if (avg_proximity_data < 20) { //hand is very close ---------- disabled ----------------------------
                 DPL("Proximity-Check: Very close: Config Goodwatch");
+                display.init(DEBUG_DISPLAY);
+                Load_PaintWeather(display);
+                delay(10000);
+                display.clearScreen();
+                PaintWatch(display, false, false);
+
+/*
                 display.init(DEBUG_DISPLAY);
                 ConfigGoodWatch(display);
                 display.clearScreen();
                 PaintWatch(display, false, false);
-            } else if (avg_proximity_data < 70) { //hand a bit away and its not dark
+*/
+            } else if (avg_proximity_data < 50) { //hand a bit away and its not dark
 
 /*          // **********************************************************************************************
             // Medium Close - Show Alarm Screen ********** **************************************************
@@ -352,12 +381,12 @@ void loop() {
 
     DPL("Prepare deep sleep");
 
-    int wait_count=0;
+    int wait_count = 0;
 
-    while (max_light_level>0 or !b_audio_finished) {
+    while (max_light_level > 0 or !b_audio_finished) {
         DPL("WAIT for Light or Sound to finish");
         wait_count++;
-        if (wait_count>200) {
+        if (wait_count > 200) {
             DPL("TimeOut on waiting - something wrong here - BREAK Loop");
             break;
         }

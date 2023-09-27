@@ -230,6 +230,7 @@ void ProgramAlarm(GxEPD2_GFX &d) {
     char time_str[7] = TIME_EMPTY;
     bool b_valid_time = false;
     bool b_menu_loop = true;
+    bool b_update_rtc = false;
     int value_idx = 0;
     int selected_alarm = 0;
 
@@ -238,7 +239,10 @@ void ProgramAlarm(GxEPD2_GFX &d) {
 
         value_idx = GetVoiceCommand();
 
-        if (value_idx == ANSWER_NO) b_menu_loop = false;
+        if (value_idx == ANSWER_NO || value_idx == ANSWER_TIMEOUT) {
+            b_menu_loop = false;
+            break;
+        }
 
         if ((value_idx <= ALARM_NUMBERS_DISPLAY) && (value_idx >= 1)) {
 
@@ -291,11 +295,12 @@ void ProgramAlarm(GxEPD2_GFX &d) {
 
                 if (b_valid_switch) {
                     DPL("Changed Alarm Switch - updating RTC Data");
+                    b_update_rtc=true;
                     rtcData.writeRTCData();
                 }
 
                 value_idx = GetVoiceCommand();
-                if (value_idx == ANSWER_YES) {
+                if (value_idx == ANSWER_YES || value_idx==ANSWER_TIMEOUT) {
                     b_menu_loop = false;
                 }
 
@@ -316,7 +321,7 @@ void ProgramAlarm(GxEPD2_GFX &d) {
                 value_idx = 99;
                 while (value_idx > ALARM_NUMBERS_DISPLAY) {
                     value_idx = GetVoiceCommand();
-                    if (value_idx == ANSWER_NO) {
+                    if (value_idx == ANSWER_NO || value_idx== ANSWER_TIMEOUT) {
                         b_menu_loop = false;
                     }
                 }
@@ -336,6 +341,9 @@ void ProgramAlarm(GxEPD2_GFX &d) {
                     tx_old = tx;
                     value_idx = GetVoiceCommand();
 
+                    if (value_idx == ANSWER_TIMEOUT){
+                        tx=leave;
+                    } else
                     if (value_idx == ANSWER_NO) {
                         tx--;
                         if (tx > leave) BuildTimeString(tx, INPUT_PROMPT - '0', time_str);
@@ -368,6 +376,7 @@ void ProgramAlarm(GxEPD2_GFX &d) {
 
                     rtcData.writeRTCData();
                     b_valid_time = false;
+                    b_update_rtc= true;
                 }
 
                 //**************************************************************************************
@@ -375,7 +384,7 @@ void ProgramAlarm(GxEPD2_GFX &d) {
 
                 PL(d, CONFIRM_LINE, 1, "Fertig? [ja/nein]", true, true);
                 value_idx = GetVoiceCommand();
-                if (value_idx == ANSWER_NO) {
+                if ((value_idx != ANSWER_YES) && (value_idx != ANSWER_TIMEOUT)) {
                     PL(d, CONFIRM_LINE, 1, "", true, true);
 
                 } else {
@@ -401,7 +410,11 @@ void ProgramAlarm(GxEPD2_GFX &d) {
     } while (b_menu_loop);
 
     microphone_inference_end();
-    SetNextAlarm(true); // determines next alarm and writes it into RTC
+    if (b_update_rtc) {
+        SetNextAlarm(true); // determines next alarm and writes it into RTC
+    } else {
+        DPL("Leave without RTC Update - no valid time entered");
+    }
 
 
 }

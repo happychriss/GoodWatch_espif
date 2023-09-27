@@ -56,3 +56,22 @@ esp_sleep_wakeup_cause_t print_wakeup_reason() {
     return wakeup_reason;
 }
 
+void waitAndPrint(const char* message) {
+    Serial.print(message); // Write the message to the serial port
+    Serial.println(" ...press key!");
+
+    // Wait for any key press
+    while (!Serial.available()) {
+        delay(100);
+        // Wait until at least one byte is available in the input buffer
+    }
+
+    // Read the pressed key
+    char keyPressed = Serial.read(); // Read the first available byte
+
+
+    // Clear the input buffer
+    while (Serial.available()) {
+        Serial.read(); // Clear any remaining bytes in the input buffer
+    }
+}
