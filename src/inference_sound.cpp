@@ -266,7 +266,7 @@ void FinishVoiceCommands() {
 }
 
 void VoiceAcquisitionTEST() {
-    SetupWifi_SNTP();
+    SetupWifi();
     DPL("Start Voice Capture");
     ESP_ERROR_CHECK(i2s_start(I2S_MICRO));
     DPL("*************Start Task************");

@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="CMakePresetLoader">{
+  &quot;useNewFormat&quot;: true
+}</component>
+  <component name="CMakeReloadState">
+    <option name="reloaded" value="true" />
+  </component>
+  <component name="CMakeRunConfigurationManager">
+    <generated>
+      <config projectName="Project" targetName="Production" />
+      <config projectName="Project" targetName="Z_DUMMY_TARGET" />
+      <config projectName="Project" targetName="Debug" />
+    </generated>
+  </component>
+  <component name="CMakeSettings" AUTO_RELOAD="true">
+    <configurations>
+      <configuration PROFILE_NAME="lolin_d32_pro" ENABLED="true" CONFIG_NAME="lolin_d32_pro" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="a4085ef8-2541-4d58-92fe-b02b31389739" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/serialmonitor_settings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/serialmonitor_settings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/arduino" beforeDir="false" afterPath="$PROJECT_DIR$/components/arduino" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/documentation/.~lock.VL6180X.odt#" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/global_display.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/global_display.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/display_support.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/display_support.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/edgeimpulse/model-parameters/model_metadata.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/edgeimpulse/model-parameters/model_metadata.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/inference_sound.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/inference_sound.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/paint_alarm.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/paint_alarm.cpp" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:lolin_d32_pro" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectApplicationVersion">
+    <option name="ide" value="CLion" />
+    <option name="majorVersion" value="2021" />
+    <option name="minorVersion" value="3.3" />
+  </component>
+  <component name="ProjectId" id="26U7ZhPMr7R2T0Fp7Qm79nQir51" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+    <option name="showMembers" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;true&quot;,
+    &quot;cf.advertisement.text.has.clang-format&quot;: &quot;true&quot;,
+    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;cmake.loaded.for.project&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/development/Projects/TouchSwitch&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;ruby.rails.projectView.checked&quot;: &quot;true&quot;,
+    &quot;serialMonitor.commands&quot;: &quot;c&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;structure.view.defaults.are.configured&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RunManager" selected="Shell Script.EI Model Download">
+    <configuration name="EI Model Download" type="ShConfigurationType">
+      <option name="SCRIPT_TEXT" value="" />
+      <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
+      <option name="SCRIPT_PATH" value="$PROJECT_DIR$/download_model.sh" />
+      <option name="SCRIPT_OPTIONS" value="ei_65e46d940b72d8d02431b902e556fe067b08cc04f6904321d7cf71e60c621331" />
+      <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="true" />
+      <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="INDEPENDENT_INTERPRETER_PATH" value="true" />
+      <option name="INTERPRETER_PATH" value="/bin/bash" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="EXECUTE_IN_TERMINAL" value="true" />
+      <option name="EXECUTE_SCRIPT_FILE" value="true" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <configuration name="menuconfig" type="ShConfigurationType">
+      <option name="SCRIPT_TEXT" value="" />
+      <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
+      <option name="SCRIPT_PATH" value="$USER_HOME$/.local/bin/pio" />
+      <option name="SCRIPT_OPTIONS" value="run -t menuconfig" />
+      <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="true" />
+      <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="INDEPENDENT_INTERPRETER_PATH" value="true" />
+      <option name="INTERPRETER_PATH" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="EXECUTE_IN_TERMINAL" value="true" />
+      <option name="EXECUTE_SCRIPT_FILE" value="true" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <configuration name="PlatformIO Debug" type="platformio" factoryName="PlatformIO Debug" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="GoodWatch_espif" TARGET_NAME="Debug" CONFIG_NAME="lolin_d32_pro" RUN_TARGET_PROJECT_NAME="GoodWatch_espif" RUN_TARGET_NAME="Debug">
+      <method v="2" />
+    </configuration>
+    <configuration name="PlatformIO Upload" type="platformio" factoryName="PlatformIO Upload" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="GoodWatch_espif" TARGET_NAME="Production" CONFIG_NAME="lolin_d32_pro" RUN_TARGET_PROJECT_NAME="GoodWatch_espif" RUN_TARGET_NAME="Production">
+      <method v="2" />
+    </configuration>
+    <configuration name="PlatformIO Uploadfs" type="platformio" factoryName="PlatformIO Uploadfs" nameIsGenerated="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="GoodWatch_espif" TARGET_NAME="Production" CONFIG_NAME="lolin_d32_pro">
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Shell Script.EI Model Download" />
+      <item itemvalue="Shell Script.menuconfig" />
+    </list>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="a4085ef8-2541-4d58-92fe-b02b31389739" name="Changes" comment="" />
+      <created>1647466367675</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1647466367675</updated>
+      <workItem from="1647466368759" duration="271000" />
+      <workItem from="1647466694656" duration="533000" />
+      <workItem from="1647467237413" duration="5148000" />
+      <workItem from="1647472494763" duration="381000" />
+      <workItem from="1650121546589" duration="201000" />
+      <workItem from="1650121766743" duration="4800000" />
+      <workItem from="1650131127589" duration="755000" />
+      <workItem from="1650131910177" duration="14000" />
+      <workItem from="1650131946407" duration="375000" />
+      <workItem from="1650132584223" duration="251000" />
+      <workItem from="1650133115589" duration="1600000" />
+      <workItem from="1650134727255" duration="1243000" />
+      <workItem from="1650135985679" duration="11984000" />
+      <workItem from="1650188666862" duration="4206000" />
+      <workItem from="1650192916225" duration="9522000" />
+      <workItem from="1650209004327" duration="428000" />
+      <workItem from="1650209447427" duration="19000" />
+      <workItem from="1650209551783" duration="1118000" />
+      <workItem from="1650213467451" duration="34000" />
+      <workItem from="1650213513548" duration="21000" />
+      <workItem from="1650215221398" duration="107000" />
+      <workItem from="1650215554158" duration="2445000" />
+      <workItem from="1650308441194" duration="4638000" />
+      <workItem from="1650569308461" duration="5130000" />
+      <workItem from="1650656819086" duration="701000" />
+      <workItem from="1650657531164" duration="8666000" />
+      <workItem from="1650744323542" duration="1049000" />
+      <workItem from="1650747858651" duration="8000" />
+      <workItem from="1651091865538" duration="1107000" />
+      <workItem from="1652385014133" duration="2251000" />
+      <workItem from="1652387276677" duration="27000" />
+      <workItem from="1652474404975" duration="31000" />
+      <workItem from="1652475000484" duration="1610000" />
+      <workItem from="1652561800662" duration="599000" />
+      <workItem from="1652563649455" duration="302000" />
+      <workItem from="1652563959767" duration="913000" />
+      <workItem from="1653250931676" duration="361000" />
+      <workItem from="1653426318520" duration="599000" />
+      <workItem from="1653515007650" duration="619000" />
+      <workItem from="1654031159086" duration="11000" />
+      <workItem from="1654113599456" duration="599000" />
+      <workItem from="1654114328388" duration="1000" />
+      <workItem from="1654114378766" duration="43000" />
+      <workItem from="1654114576728" duration="757000" />
+      <workItem from="1654115375499" duration="162000" />
+      <workItem from="1654115599869" duration="1486000" />
+      <workItem from="1654117309145" duration="409000" />
+      <workItem from="1654544937901" duration="610000" />
+      <workItem from="1654627631140" duration="15000" />
+      <workItem from="1654974644565" duration="1948000" />
+      <workItem from="1654980773317" duration="236000" />
+      <workItem from="1654981018142" duration="3208000" />
+      <workItem from="1655057908413" duration="3089000" />
+      <workItem from="1655061060597" duration="2317000" />
+      <workItem from="1656098579308" duration="784000" />
+      <workItem from="1656272086636" duration="1153000" />
+      <workItem from="1656446047803" duration="2644000" />
+      <workItem from="1660507068184" duration="334000" />
+      <workItem from="1660508433004" duration="6000" />
+      <workItem from="1660508482431" duration="117000" />
+      <workItem from="1660508606757" duration="5615000" />
+      <workItem from="1661626924818" duration="55000" />
+      <workItem from="1661627658615" duration="665000" />
+      <workItem from="1661632431331" duration="7773000" />
+      <workItem from="1661716607783" duration="4631000" />
+      <workItem from="1661721623994" duration="562000" />
+      <workItem from="1661801068344" duration="4290000" />
+      <workItem from="1661888309190" duration="6150000" />
+      <workItem from="1661895040246" duration="494000" />
+      <workItem from="1661980396076" duration="1883000" />
+      <workItem from="1662062279525" duration="2121000" />
+      <workItem from="1664652877881" duration="2811000" />
+      <workItem from="1665083997153" duration="3106000" />
+      <workItem from="1665259670303" duration="1471000" />
+      <workItem from="1665346772310" duration="2080000" />
+      <workItem from="1666984301387" duration="2129000" />
+      <workItem from="1667071438118" duration="1044000" />
+      <workItem from="1667072551698" duration="5717000" />
+      <workItem from="1667158700130" duration="4333000" />
+      <workItem from="1667163721193" duration="1085000" />
+      <workItem from="1667169817892" duration="260000" />
+      <workItem from="1667239256221" duration="1637000" />
+      <workItem from="1667255317531" duration="72000" />
+      <workItem from="1667328289195" duration="3762000" />
+      <workItem from="1667509798494" duration="2000" />
+      <workItem from="1667595369363" duration="6689000" />
+      <workItem from="1667683051008" duration="3272000" />
+      <workItem from="1667851321536" duration="6566000" />
+      <workItem from="1667941523019" duration="2464000" />
+      <workItem from="1668022645204" duration="1620000" />
+      <workItem from="1668024275368" duration="5536000" />
+      <workItem from="1668113034155" duration="2548000" />
+      <workItem from="1668115592461" duration="2738000" />
+      <workItem from="1668199294424" duration="6402000" />
+      <workItem from="1669237007276" duration="3838000" />
+      <workItem from="1669407443178" duration="229000" />
+      <workItem from="1669665784671" duration="6833000" />
+      <workItem from="1669753457801" duration="3675000" />
+      <workItem from="1673900421141" duration="415000" />
+      <workItem from="1673990405398" duration="620000" />
+      <workItem from="1674080530154" duration="373000" />
+      <workItem from="1679862178507" duration="963000" />
+      <workItem from="1682632038667" duration="522000" />
+      <workItem from="1684607779750" duration="135000" />
+      <workItem from="1684607926800" duration="16000" />
+      <workItem from="1684607953432" duration="1836000" />
+      <workItem from="1684609812088" duration="463000" />
+      <workItem from="1686334807785" duration="6000" />
+      <workItem from="1690137442897" duration="777000" />
+      <workItem from="1690144881615" duration="18000" />
+      <workItem from="1692471957420" duration="681000" />
+      <workItem from="1692474201528" duration="95000" />
+      <workItem from="1692474308242" duration="257000" />
+      <workItem from="1692474577828" duration="6000" />
+    </task>
+    <task id="LOCAL-00001" summary="working version with Arduino component, VL6180 distance sensor as task with gain multiplier to work better on low light situations">
+      <created>1650661247053</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1650661247053</updated>
+    </task>
+    <task id="LOCAL-00002" summary="working version with Arduino component, VL6180 distance sensor as task with gain multiplier to work better on low light situations - fixed sound dimming.">
+      <created>1650666184940</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1650666184940</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Arduino component updated, new EdgeImuplse model adjusted to clock-hardware using EOS, fixed timing issue on i2s_read">
+      <created>1668031237023</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1668031237023</updated>
+    </task>
+    <task id="LOCAL-00004" summary="small improvements, display light at night always, no &quot;knack&quot; when light is on">
+      <created>1668205507525</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1668205507525</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VCPKGProject">
+    <isAutomaticEditVcpkgJson value="false" />
+    <isAutomaticCheckingOnLaunch value="false" />
+    <isAutomaticFoundErrors value="true" />
+    <isAutomaticFoundErrors value="true" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="CHECK_NEW_TODO" value="false" />
+    <ignored-roots>
+      <path value="$PROJECT_DIR$" />
+      <path value="$PROJECT_DIR$/components/arduino" />
+    </ignored-roots>
+    <MESSAGE value="working version with Arduino component, VL6180 distance sensor as task with gain multiplier to work better on low light situations" />
+    <MESSAGE value="working version with Arduino component, VL6180 distance sensor as task with gain multiplier to work better on low light situations - fixed sound dimming." />
+    <MESSAGE value="Arduino component updated, new EdgeImuplse model adjusted to clock-hardware using EOS, fixed timing issue on i2s_read" />
+    <MESSAGE value="small improvements, display light at night always, no &quot;knack&quot; when light is on" />
+    <option name="LAST_COMMIT_MESSAGE" value="small improvements, display light at night always, no &quot;knack&quot; when light is on" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$USER_HOME$/.local/lib/python3.10/site-packages/platformio/package/meta.py</url>
+          <line>72</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/venv/lib/python3.10/site-packages/platformio/package/meta.py</url>
+          <line>72</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>

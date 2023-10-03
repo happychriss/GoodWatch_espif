@@ -10,6 +10,12 @@
 #include <HTTPClient.h>
 #include <lwip/apps/sntp.h>
 #include "support.h"
-void SetupWifi_SNTP() ;
+#include "my_RTClib.h"
+
+void SetupWifi() ;
+void SetupSNTP();
 void sendData(uint8_t *bytes, size_t count);
+tm now_tm();
+DateTime now_datetime();
+
 #endif //GOODWATCH_WIFI_SUPPORT_H

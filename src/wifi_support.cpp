@@ -12,7 +12,7 @@
 
 
 
-void SetupWifi_SNTP() {
+void SetupWifi() {
     DP("Starting Wifi");
 
     WiFi.disconnect();
@@ -56,6 +56,11 @@ void SetupWifi_SNTP() {
     }*/
     DPL("WIFI DONE");
 
+
+
+}
+
+void SetupSNTP() {
     DP("SNT Server Setup:");
 
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
@@ -82,7 +87,6 @@ void SetupWifi_SNTP() {
 
     delay(500); //needed until time is available
     DPL("SNTP DONE");
-
 }
 
 void sendData(uint8_t *bytes, size_t count) {

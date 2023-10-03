@@ -26,6 +26,15 @@
 #include "SPIFFS.h"
 #include "fonts/FreeSans9pt7b.h"
 
+std::vector<struct_forecast_schedule> schedule = {
+        {6,  {8,  18}},
+        {8,  {10, 19}},
+        {10, {13, 19}},
+        {12, {14, 19}},
+        {15, {18, 8}},
+        {20, {8,  18}},
+        {23, {8,  18}},
+};
 
 uint16_t read16(fs::File &f) {
     // BMP data is stored little-endian, same as Arduino.
@@ -189,9 +198,92 @@ void DrawWeatherToDisplay(GxEPD2_GFX &d, struct_Weather *Weather, std::vector<in
     } while (d.nextPage());
 
 
-
 }
 
+
+// Delete Weather from Spiffs
+void DeleteWeatherFromSPIFF() {
+
+    DPL("Delete Weather from Spiffs");
+
+    if (!SPIFFS.begin(true)) {
+        DPL("An Error has occurred while mounting SPIFFS");
+        return;
+    }
+
+    SPIFFS.remove("/weather.bin");
+
+    DPL("Done");
+}
+
+// Check if Weather is in Spiffs
+bool CheckWeatherInSPIFF() {
+
+    DPL("Check Weather in Spiffs");
+
+    if (!SPIFFS.begin(true)) {
+        DPL("An Error has occurred while mounting SPIFFS");
+        return false;
+    }
+
+    if (SPIFFS.exists("/weather.bin")) {
+        DPL("Weather in Spiffs");
+        return true;
+    } else {
+        DPL("Weather not in Spiffs");
+        return false;
+    }
+}
+
+
+// Read Weather fom Spiffs
+void ReadWeatherFromSPIFF(struct_Weather *Weather) {
+
+    DPL("Get Weather from Spiffs");
+
+    if (!SPIFFS.begin(true)) {
+        DPL("An Error has occurred while mounting SPIFFS");
+        return;
+    }
+
+    File file = SPIFFS.open("/weather.bin", FILE_READ);
+
+    if (!file) {
+        DPL("Failed to open file for reading");
+        return;
+    }
+
+    file.read((uint8_t *) Weather, sizeof(struct_Weather));
+
+    file.close();
+
+    DPL("Done");
+}
+
+
+
+void StoreWeatherToSpiffs(struct_Weather *Weather) {
+
+    DPL("Store Weather to Spiffs");
+
+    if (!SPIFFS.begin(true)) {
+        DPL("An Error has occurred while mounting SPIFFS");
+        return;
+    }
+
+    File file = SPIFFS.open("/weather.bin", FILE_WRITE);
+
+    if (!file) {
+        DPL("Failed to open file for writing");
+        return;
+    }
+
+    file.write((uint8_t *) Weather, sizeof(struct_Weather));
+
+    file.close();
+
+    DPL("Done");
+}
 
 void Load_PaintWeather(GxEPD2_GFX &d) {
 
@@ -208,15 +300,6 @@ void Load_PaintWeather(GxEPD2_GFX &d) {
 
     GetWeather(ptr_Weather);
 
-    std::vector<struct_forecast_schedule> schedule = {
-            {6,  {8,  18}},
-            {8,  {10, 19}},
-            {10, {13, 19}},
-            {12, {14, 19}},
-            {15, {18, 8}},
-            {20, {8,  18}},
-            {23, {8,  18}},
-    };
 
     DPL("Build index");
     std::vector<int> hours_for_index;
@@ -228,4 +311,28 @@ void Load_PaintWeather(GxEPD2_GFX &d) {
 
     free(ptr_Weather);
     DPL("Done");
+}
+
+void PaintWeather(GxEPD2_GFX &d) {
+
+    DPL("Paint Weather");
+    DPF("Free heap: %d/%d %d max block\n", ESP.getFreeHeap(), ESP.getHeapSize(), ESP.getMaxAllocHeap());
+    DPF("Free PSRAM: %d/%d %d max block\n", ESP.getFreePsram(), ESP.getPsramSize(), ESP.getMaxAllocPsram());
+
+    auto *ptr_Weather = (struct_Weather *) ps_malloc(sizeof(struct_Weather));
+    if (ptr_Weather == nullptr) {
+        DPL("Error allocating memory for Weather");
+    }
+
+    ReadWeatherFromSPIFF(ptr_Weather);
+
+    DPL("Build index");
+    std::vector<int> hours_for_index;
+    if (returnHourIndexFromForecast(schedule, &(ptr_Weather->HourlyWeather), &hours_for_index)) {
+        DrawWeatherToDisplay(d, ptr_Weather, hours_for_index);
+    } else {
+        DPL("Paint weather failed - didnt find an index");
+    }
+
+    free(ptr_Weather);
 }

@@ -32,7 +32,7 @@
 
 
 uint16_t ambient_light=0;
-extern int max_light_level;
+extern int global_light_enabled_level;
 
 extern VL6180X distance_sensor;
 
@@ -103,6 +103,28 @@ void DistanceSensorSetup() {
     distance_sensor.writeReg16Bit(VL6180X::SYSALS__INTEGRATION_PERIOD, 0x63); //400 ms 0x63 0x18F
 //        distance_sensor.writeReg(VL6180X::FIRMWARE__RESULT_SCALER,0x07);
     distance_sensor.setTimeout(500);
+    DPL("VL6180X Distance Sensor - Setup done");
+}
+#define ZERO_OUT_DISTANCE 10
+uint16_t ReadSensorDistance() {
+    uint16_t avg_proximity_data = distance_sensor.readRangeSingleMillimeters();
+    DPF("*** Distance[mm]: %i\n", avg_proximity_data);
+
+    if (avg_proximity_data < ZERO_OUT_DISTANCE) {
+        avg_proximity_data = 500;
+        DPL("    Zero-Out TesaFilm");
+    } else {
+        DPL("*** Second Distance");
+        delay(100);
+        avg_proximity_data = distance_sensor.readRangeSingleMillimeters();
+        DPF("*** Distance[mm]: %i\n", avg_proximity_data);
+        if (avg_proximity_data < ZERO_OUT_DISTANCE) {
+            avg_proximity_data = 500;
+            DPL("    Zero-Out TesaFilm");
+        }
+    }
+    DPF("*** FINAL Distance[mm]: %i\n", avg_proximity_data);
+    return avg_proximity_data;
 }
 
 void pwm_up_down(boolean direction_up, const uint16_t pwm_table[], int16_t size, uint16_t delay_ms) {
@@ -132,7 +154,7 @@ void pwm_up_down(boolean direction_up, const uint16_t pwm_table[], int16_t size,
 
 
 void dim_light_up_down_task(void *parameter) {
-#define MAX_LIGHT_LEVEL 128
+#define MAX_LIGHT_ENABLE_LEVEL 128
 
     bool direction_up = *((bool *) parameter);
     const int freq = 120;
@@ -140,25 +162,26 @@ void dim_light_up_down_task(void *parameter) {
     const int resolution = 8;
 
 
+
     // enable light
     if (direction_up) {
+        DPL("*Start Light Measurement with direction UP");
         ledcSetup(ledChannel, freq, resolution);
         ledcAttachPin(DISPLAY_CONTROL, ledChannel);
 
-        DPL("*Start Light Measurement*");
         ambient_light = distance_sensor.readAmbientSingle();
-
-        if (ambient_light<2) {max_light_level=MAX_LIGHT_LEVEL/2;}
-        else if (ambient_light<10)  {max_light_level=MAX_LIGHT_LEVEL;}
-        else max_light_level=0;
-        DPL("*Dim Light ON*");
         DPF("*** Ambient Light:%i\n", ambient_light);
-        DPF("*** Max Light Level:%i\n", max_light_level);
 
-        if (max_light_level!=0) {
+        if (ambient_light<2) { global_light_enabled_level= MAX_LIGHT_ENABLE_LEVEL / 2;}
+        else if (ambient_light<10)  { global_light_enabled_level=MAX_LIGHT_ENABLE_LEVEL;}
+        else global_light_enabled_level=0;
+
+        DPF("*** Global Max Light Level:%i\n", global_light_enabled_level);
+
+        if (global_light_enabled_level != 0) {
             digitalWrite(DISPLAY_AND_SOUND_POWER, HIGH);
             delay(50);
-            for (int dutyCycle = 0; dutyCycle <= max_light_level; dutyCycle++) {
+            for (int dutyCycle = 0; dutyCycle <= global_light_enabled_level; dutyCycle++) {
                 // changing the LED brightness with PWM
                 ledcWrite(ledChannel, dutyCycle);
                 delay(10);
@@ -167,11 +190,11 @@ void dim_light_up_down_task(void *parameter) {
 
     // disable light
     } else {
-        DPL("*Dim Light OFF*");
-        DPF("*** Light Level:%i\n", max_light_level);
-        if (max_light_level> 0) {
+        DPL("*Start Light Measurement with direction DOWN");
+        DPF("*** Light Level:%i\n", global_light_enabled_level);
+        if (global_light_enabled_level > 0) {
 
-            for (int dutyCycle = max_light_level; dutyCycle >= 0; dutyCycle--) {
+            for (int dutyCycle = global_light_enabled_level; dutyCycle >= 0; dutyCycle--) {
                 // changing the LED brightness with PWM
                 ledcWrite(ledChannel, dutyCycle);
                 delay(20);
@@ -179,10 +202,11 @@ void dim_light_up_down_task(void *parameter) {
 
             delay(50);
         }
-        max_light_level=0;
+        global_light_enabled_level=0;
     }
     vTaskDelete(NULL);
 }
+
 
 
 void dim_light_up_down_esp32(boolean direction_up) {
@@ -195,6 +219,28 @@ void dim_light_up_down_esp32(boolean direction_up) {
             0,               // Task priority
             NULL             // Task handle
     );
+}
+
+int GetMaxLightLevel() {
+    DP("GetMaxLightLevel");
+    global_light_enabled_level = -1;
+    dim_light_up_down_esp32(true); //this function set the global_light_enabled_level
+
+    DPL("!!!! Wait for Light Level measurement....");
+    int wait_max_light_level = 0;
+    while (global_light_enabled_level < 0 and wait_max_light_level < 500) {
+        delay(2);
+        wait_max_light_level++;
+//        DPL(wait_max_light_level);
+    }
+
+    if (wait_max_light_level == 500) {
+        DPL("Warning: Timeout on light level measurement I2C");
+    }
+    DP("LightLevel: ");
+    DPL(global_light_enabled_level);
+    delay(10);
+    return global_light_enabled_level;
 }
 
 

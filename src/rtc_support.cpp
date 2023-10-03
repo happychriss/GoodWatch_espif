@@ -74,26 +74,33 @@ DateTime tm_2_datetime(tm timeinfo) {
     return DateTime(timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 }
 
+// Three different ways to store time:
+// time_t is a 32 bit integer
+// tm is a struct with 9 members
+// DateTime is a struct with 6 members - adjusted to print with 1900 correction
 
-void espPrintTimeNow() {
-    struct tm timeinfo = {};
-    time_t now;
-
-    time(&now);
-    localtime_r(&now, &timeinfo);
-
-    DP("*local* Time from ESP32: ");
-    DPL(DateTimeString(tm_2_datetime(timeinfo)));
-}
-
-
-DateTime now_datetime() {
+tm now_tm() {
     struct tm timeinfo = {};
     time_t now;
     time(&now);
     localtime_r(&now, &timeinfo); //dont apply local time a 2nd time, rtc clock is already in local time.
-    return tm_2_datetime(timeinfo);
+    return timeinfo;
 }
+
+DateTime now_datetime() {
+   return tm_2_datetime(now_tm());
+}
+
+void espPrintTimeNow() {
+
+    DP("*local* Time from ESP32: ");
+    DPL(DateTimeString(now_datetime()));
+}
+
+void PrintSerialTime(tm tm) {
+    DPL(DateTimeString(tm_2_datetime(tm)));
+}
+
 
 void rtcInit() {
     // initializing the rtc

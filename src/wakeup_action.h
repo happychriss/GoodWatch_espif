@@ -10,5 +10,5 @@ extern bool b_pir_wave;
 extern bool b_audio_finished;
 extern Audio audio;
 
-void PlayWakeupSong();
+void WakeUpRoutine(GxEPD2_GFX &d);
 #endif //GOODWATCH_AUDIO_SUPPORT_H

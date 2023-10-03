@@ -36,7 +36,7 @@
 // see model_metadata.h - indes of labels from { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "j", "n" };
 #define ANSWER_YES 10
 #define ANSWER_NO 11
-#define ANSWER_SET 9
+#define ANSWER_SET 7
 #define ANSWER_TIMEOUT -2
 
 
@@ -49,6 +49,7 @@ struct str_watch_config {
     enum_alarm_type type;
     int dl; //line on the display
     String alarm_name;
+    bool b_exclusive;
 
 };
 

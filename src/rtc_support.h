@@ -22,6 +22,9 @@ void rtcInit() ;
 void rtcSetRTCFromInternet() ;
 void espPrintTimeNow() ;
 void rtsSetEspTime(DateTime dt);
+void PrintSerialTime(tm tm);
+
+
 DateTime  now_datetime();
 String rtcFormatCurrentTime(char * str_format);
 void I2C_Scanner();

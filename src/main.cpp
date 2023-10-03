@@ -20,10 +20,12 @@
 #include "Audio.h"
 #include "VL6180X.h"
 #include "paint_weather.h"
+#include "weather.h"
+#include "Fonts/FreeSans12pt7b.h"
 
 // custom
 #include <display_support.hpp>
-#include <audio_support.hpp>
+#include <wakeup_action.hpp>
 #include <rtc_support.h>
 
 #include <wifi_support.h>
@@ -37,6 +39,8 @@
 #undef DISABLE_EPD
 #define DATA_ACQUISITION
 #define DEBUG_DISPLAY 0 //115200
+
+#define LIGHT_IS_ON 0
 
 
 // esptool to reset Goodwacht
@@ -66,8 +70,8 @@ QueueHandle_t m_i2sQueue;
 bool b_audio_end_of_mp3 = false;
 bool b_audio_finished = true;
 
-// light sensor
-int max_light_level = -1;
+// global value for light measurement task
+int global_light_enabled_level=-1;
 
 Audio audio;
 
@@ -99,12 +103,12 @@ void battery_sent() {
     DP("Battery V: ");
     DPL(BatteryVoltage);
 
-    SetupWifi_SNTP();
+    SetupWifi();
     WiFiClient client;
     HTTPClient http;
     http.begin(client, "http://192.168.1.110:8088/voltage");
     http.addHeader("Content-Type", "application/json");
-    String source = "\"source\":\"GW_Development\"";
+    String source = "\"source\":\"GW_Production\"";
     String voltage = "\"voltage\":\"" + String(BatteryVoltage, 2) + "\"";
     String httpRequestData = "{" + source + "," + voltage + "}";
     DP("RequestString:");
@@ -148,7 +152,7 @@ void setup() {
     if (false) {
         //        pinMode(GPIO_NUM_34, INPUT_PULLUP);
         delay(2500);
-        PlayWakeupSong();
+        WakeUpRoutine(display);
     }
 
 
@@ -158,7 +162,7 @@ void setup() {
 
 void loop() {
     DPL("****** Main Loop ***********");
-    max_light_level = -1;
+    global_light_enabled_level = -1;
     wakeup_reason = print_wakeup_reason();
 
     if (!rtc_watch.begin()) {
@@ -193,7 +197,8 @@ void loop() {
         DPL("!!!! ****** Boot ******  !!!!");
         // stop oscillating signals at SQW Pin
         // otherwise setAlarm1 will fail
-        SetupWifi_SNTP();
+        SetupWifi();
+        SetupSNTP();
 
         rtc_watch.writeSqwPinMode(DS3231_OFF);
         rtc_watch.disable32K();
@@ -210,7 +215,7 @@ void loop() {
         DPL("!!!! ****** Wakeup ****** !!!!");
         if (rtc_watch.lostPower()) {
             DPL("!!!!!RTC Watch lost power - Reset from Internet");
-            SetupWifi_SNTP();
+            SetupWifi();
             rtcSetRTCFromInternet();
         } else {
             DPL("!!!!! Set ESP time from RTC");
@@ -221,14 +226,17 @@ void loop() {
 
 /*
     // **********************************************************************************************
-    // Alarm Clock Wakeup ***************************************************************************
+    // RTC Alarm Wakeup ***************************************************************************
     // **********************************************************************************************
 */
 
     DPL("Checking other wakeup reasons....");
     if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT1) {
         DPL("!!!! RTC Alarm Clock Wakeup");
+
+        /* **********************************************************************************************
         /* 5 min wakeup  ***************************************************************************/
+
         if (rtc_watch.alarmFired(ALARM1_5_MIN)) {
             DPL("*** Alarm1 Fired: Alarm for 5min refresh");
             DPL("!!! RTC Wakeup after 5min");
@@ -236,8 +244,13 @@ void loop() {
             rtc_watch.disableAlarm(ALARM1_5_MIN);
             DateTime now_time = rtc_watch.now();
             rtsSetEspTime(now_time);
+
             display.init(DEBUG_DISPLAY, false);
             PaintWatch(display, true, false);
+
+            CheckAndPrepareWeather();
+
+            /* ***************************************************************************/
 
             /* measure battery performance */
             if (now_time.hour() == 22 && now_time.minute() == 35) {
@@ -246,6 +259,7 @@ void loop() {
             }
         }
 
+        /* **********************************************************************************************
         /* Alarm wakeup  ***************************************************************************/
         if (rtc_watch.alarmFired(ALARM2_ALARM)) {
             DPL("*** Alarm2 Fired: ALARM for Wakeup");
@@ -260,16 +274,23 @@ void loop() {
                 digitalWrite(DISPLAY_AND_SOUND_POWER, HIGH);
                 attachInterrupt(PIR_INT, Ext_INT1_ISR, HIGH);
 
-                PlayWakeupSong();
-                dim_light_up_down_esp32(false);
-                detachInterrupt(PIR_INT);
+                // Play music song and paint weather
+                display.init(DEBUG_DISPLAY,false);
 
+
+                /* WAKEUP Routine  ***************************************************************************/
+                /* Play Music */
+                /* Show Weather */
+                WakeUpRoutine(display);
+
+                display.init(DEBUG_DISPLAY, true);
+                PaintWatch(display, false, false);
+
+                detachInterrupt(PIR_INT);
                 while (digitalRead(PIR_INT) == true) {
                     delay(100);
                 }
 
-                display.init(DEBUG_DISPLAY, true);
-                PaintWatch(display, false, false);
             } else {
                 DPL("Alarm was fired by RTC, no active Alarm found on RTC-Data - dont do anything");
             }
@@ -282,58 +303,29 @@ void loop() {
        // PIR Sensor Wakeup*****************************************************************************
        // ***********************************************************************************************/
 
-
-
     if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0) {
         DPL("!!!! PIR Sensor Wakeup !!!! ");
 
-        max_light_level = -1;
-        dim_light_up_down_esp32(true);
+        int light_level = GetMaxLightLevel();
 
-        DP("!!!! Wait for Light Level measurement....");
-        int wait_max_light_level=0;
-        while (max_light_level < 0 and wait_max_light_level<500) {
-            delay(2);
-            wait_max_light_level++;
-//            DPL(wait_max_light_level);
-        }
-        if (wait_max_light_level==500) {
-            DPL("Warning: Timeout on light level measurement I2C");
-        }
-        DP("LightLevel: ");
-        DPL(max_light_level);
-        delay(10);
+        // ***********************************************************************************************/
+        // DARK - Light is on - do nothing **************************************************************
+        if (light_level > LIGHT_IS_ON) {
 
-        if (max_light_level > 0) {
-            DPL("*** Its dark outside - light is on - not doing anyhing");
+            DPL("*** Its dark outside - just light on - not doing anyhing else");
             delay(2000);
 
         } else {
-#define ZERO_OUT_DISTANCE 10
+
             DistanceSensorSetup();
-            uint16_t avg_proximity_data = distance_sensor.readRangeSingleMillimeters();
-            DPF("*** Distance[mm]: %i\n", avg_proximity_data);
 
-            if (avg_proximity_data < ZERO_OUT_DISTANCE) {
-                avg_proximity_data = 500;
-                DPL("    Zero-Out TesaFilm");
-            } else {
-                DPL("*** Second Distance");
-                delay(500);
-                avg_proximity_data = distance_sensor.readRangeSingleMillimeters();
-                DPF("*** Distance[mm]: %i\n", avg_proximity_data);
-                if (avg_proximity_data < ZERO_OUT_DISTANCE) {
-                    avg_proximity_data = 500;
-                    DPL("    Zero-Out TesaFilm");
-                }
-            }
-            DPF("*** FINAL Distance[mm]: %i\n", avg_proximity_data);
+            uint16_t avg_proximity_data = ReadSensorDistance();
 
-/*      // **********************************************************************************************
-        // VERY CLOSE - Data Acuisition and OTA Update **************************************************
-        // ***********************************************************************************************/
+            // **********************************************************************************************
+            // VERY CLOSE - Data Acuisition and OTA Update **************************************************
+            // ***********************************************************************************************/
 
-            if (avg_proximity_data < 20) { //hand is very close ---------- disabled ----------------------------
+            if (avg_proximity_data < -20) { //hand is very close ---------- disabled ----------------------------
                 DPL("Proximity-Check: Very close: Config Goodwatch");
                 display.init(DEBUG_DISPLAY);
                 Load_PaintWeather(display);
@@ -347,7 +339,7 @@ void loop() {
                 display.clearScreen();
                 PaintWatch(display, false, false);
 */
-            } else if (avg_proximity_data < 50) { //hand a bit away and its not dark
+            } else if (avg_proximity_data < 45) { //hand a bit away and its not dark
 
 /*          // **********************************************************************************************
             // Medium Close - Show Alarm Screen ********** **************************************************
@@ -358,13 +350,21 @@ void loop() {
                 ProgramAlarm(display);
                 PaintWatch(display, false, false);
             } else { // hand away, but not dark
-                DPL("Proximity-Check: No Hand: Quick Time");
+
+/*          // **********************************************************************************************
+            // No Hand, show Quicktime  ********** **************************************************
+            // ***********************************************************************************************/
+
+                DPL("Proximity-Check: Hand away, but not dark: Show Quicktime");
+
+                // no weather forecast, just paint quicktime
                 display.init(DEBUG_DISPLAY, false);
                 PaintQuickTime(display, false);
+
+
 //            battery_sent();
-            }
-        }
-        dim_light_up_down_esp32(false);
+            } // end of distrance checking loop for pir sensor (light not on)
+        } // end of clock light is not on
 
         // Give the PIR time to go down, before going to sleep
         while (digitalRead(PIR_INT) == true) {
@@ -379,14 +379,21 @@ void loop() {
     // ***********************************************************************************************/
 
 
-    DPL("Prepare deep sleep");
+    DPF("Prepare deep sleep with global_light_enabled_level:%i\n", global_light_enabled_level);
 
     int wait_count = 0;
 
-    while (max_light_level > 0 or !b_audio_finished) {
+    if (global_light_enabled_level>0) {
+        dim_light_up_down_esp32(false);
+    } else {
+        DPL("Light is off - no dimming");
+    }
+
+
+    while (global_light_enabled_level > 0 or !b_audio_finished) {
         DPL("WAIT for Light or Sound to finish");
         wait_count++;
-        if (wait_count > 200) {
+        if (wait_count > 500) {
             DPL("TimeOut on waiting - something wrong here - BREAK Loop");
             break;
         }

@@ -13,9 +13,10 @@
 #include <paint_support.h>
 #include <ArduinoOTA.h>
 #include "Audio.h"
-#include "audio_support.h"
+#include "wakeup_action.h"
 #include <FS.h>
 #include <SPIFFS.h>
+#include "paint_watch.h"
 
 
 
@@ -23,11 +24,11 @@ extern Audio audio;
 
 // days start Sunday
 struct str_watch_config wc[ALARM_NUMBERS_DISPLAY] = {
-        {{1, 1, 1, 1, 1, 1, 1}, single,    3 * PT12_HEIGHT,                  "Einmal-1"}, // every day of the week
-        {{1, 1, 1, 1, 1, 1, 1}, single,    4 * PT12_HEIGHT,                  "Einmal-2"}, // every day of the week
-        {{0, 1, 1, 1, 1, 1, 0}, repeating, 5 * PT12_HEIGHT + PT12_BREAK,     "MO-FR-1"}, // MO-FR
-        {{0, 1, 1, 1, 1, 1, 0}, repeating, 6 * PT12_HEIGHT + PT12_BREAK,     "MO-FR-2"},  // MO-FR
-        {{1, 0, 0, 0, 0, 0, 1}, repeating,  7 * PT12_HEIGHT + 2 * PT12_BREAK, "WE"}, // Bike MO-FR
+        {{1, 1, 1, 1, 1, 1, 1}, single,    3 * PT12_HEIGHT,                  "Einmal-1",false}, // every day of the week
+        {{1, 1, 1, 1, 1, 1, 1}, single,    4 * PT12_HEIGHT,                  "Einmal-2",false}, // every day of the week
+        {{0, 1, 1, 1, 1, 1, 0}, repeating, 5 * PT12_HEIGHT + PT12_BREAK,     "MO-FR-1",true}, // MO-FR
+        {{0, 1, 1, 1, 1, 1, 0}, repeating, 6 * PT12_HEIGHT + PT12_BREAK,     "MO-FR-2",true},  // MO-FR
+        {{1, 0, 0, 0, 0, 0, 1}, repeating,  7 * PT12_HEIGHT + 2 * PT12_BREAK, "WE", true}, // Bike MO-FR
 
 };
 
@@ -225,7 +226,7 @@ void ProgramAlarm(GxEPD2_GFX &d) {
     InitVoiceCommands();
     d.setFont(&FreeSans12pt7b);
     d.firstPage();
-    PaintAlarmScreen(d, "An/Aus [1..6] - Set [9]");
+    PaintAlarmScreen(d, "An/Aus [1..6] - Set [7]");
 
     char time_str[7] = TIME_EMPTY;
     bool b_valid_time = false;
@@ -269,6 +270,21 @@ void ProgramAlarm(GxEPD2_GFX &d) {
                         DPF("Toggle Alarm[%i]: %s\n:", selected_alarm, wc[selected_alarm].alarm_name.c_str());
                         // toggle the alarms
                         rtcData.d.alarms[selected_alarm].active = !rtcData.d.alarms[selected_alarm].active;
+
+                        // disable all alarms that are exclusive
+                        if ((rtcData.d.alarms[selected_alarm].active) && (wc[selected_alarm].b_exclusive)) {
+                            DPL("Check for exclusive alarms");
+                            // loop over all wc that have b_exclusive set
+                            for (int i = 0; i < ALARM_NUMBERS_DISPLAY; i++) {
+                                if (wc[i].b_exclusive) {
+                                    if ((i != selected_alarm) && (rtcData.d.alarms[i].active)) {
+                                        rtcData.d.alarms[i].active = false;
+                                        DPF("Deactivate Alarm[%i]: %s\n:", i, wc[i].alarm_name.c_str());
+                                        PL(d, wc[i].dl, WAKE_HOURS_COLUMN, OFF_STRING, true, true);
+                                    }
+                                }
+                            }
+                        }
 
                         if (!rtcData.d.alarms[selected_alarm].active) {
                             PL(d, wc[selected_alarm].dl, WAKE_HOURS_COLUMN, OFF_STRING, true, true);
@@ -549,7 +565,7 @@ void ConfigGoodWatch(GxEPD2_GFX &d) {
 
         digitalWrite(DISPLAY_AND_SOUND_POWER, HIGH);
 
-        PlayWakeupSong();
+        WakeUpRoutine(d);
 
         digitalWrite(DISPLAY_AND_SOUND_POWER, LOW);
         while (digitalRead(PIR_INT) == true) {

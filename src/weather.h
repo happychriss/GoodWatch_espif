@@ -31,6 +31,11 @@
 #define MOSMIX_ZIP_FILE  "/spiffs/MOSMIX_L_LATEST.kmz"
 #define MOSMIX_FILE  "/spiffs/MOSMIX_L_LATEST.kml"
 
+struct struct_forecast_schedule {
+    int check_hour;
+    std::array<int, 3> forecast_hours;
+};
+
 
 #define NO_ICON_FOUND 999
 const char * const weather_names[] = {
@@ -206,10 +211,6 @@ struct struct_Weather {
     std::array<struct_HourlyWeather, HOURS_FORECAST> HourlyWeather;
 };
 
-struct struct_forecast_schedule {
-    int check_hour;
-    std::array<int, 3> forecast_hours;
-};
 
 
 
@@ -226,7 +227,7 @@ bool returnHourIndexFromForecast(
         std::vector <int> *hours_index);
 
 String getWeatherString(int number);
-
+void CheckAndPrepareWeather();
 #endif
 
 

@@ -4,6 +4,9 @@
 
 #ifndef GOODWATCH_PAINT_WATCH_H
 #define GOODWATCH_PAINT_WATCH_H
+
+#define WAKUEP_INTERVAL 5
+
 #include "Arduino.h"
 #include <GxEPD2_BW.h>
 #include <GxEPD2_GFX.h>

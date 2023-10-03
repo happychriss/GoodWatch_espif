@@ -17,6 +17,10 @@
 #include "support.h"
 #include "wifi_support.h"
 #include "rtc_support.h"
+#include "paint_weather.h"
+#include "my_RTClib.h"
+#include "rtc_support.h"
+#include "paint_alarm.h"
 
 #define DEST_FS_USES_SPIFFS
 
@@ -24,6 +28,7 @@
 #include "support.h"
 
 bool b_wait_weather_data = true;
+extern RTC_DS3231 rtc_watch;
 
 int mps_to_bft(double windSpeed) {
     for (const auto &scale: beaufortScale) {
@@ -35,16 +40,11 @@ int mps_to_bft(double windSpeed) {
 }
 
 
-void PrintSerialTime(tm tm) {
-    DPF("%02d-%02d-%04d %02d:%02d:%02d - ", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min,
-        tm.tm_sec);
-}
-
 
 void printHourlyWeather(struct_HourlyWeather hw) {
     PrintSerialTime(hw.time);
     DPF(" (%d)\t", hw.hour_index);
-    DPF("(%d): %s\t", hw.forecast_id,getWeatherString(hw.forecast_id).c_str());
+    DPF("(%d): %s\t", hw.forecast_id, getWeatherString(hw.forecast_id).c_str());
     DPF(" %f C\t", hw.temperature);
     DPF(" %f Bft\t", hw.wind);
     DPF("Rain: %f mm\t", hw.rain);
@@ -69,7 +69,9 @@ char *downloadKML(const String fetch_url, size_t *buffer_len) {
 
 
     DPL("Enabling Wifi");
-    SetupWifi_SNTP();
+    SetupWifi();
+
+
 //    Serial.printf("Fetching URL: %s\n", url.c_str());
     DPL("Creating HTTP client...");
     auto *client = new WiFiClientSecure;
@@ -305,7 +307,7 @@ extractNumbersFromString(const std::string &inputString, std::vector<double> &nu
     bool b_has_number = false;
     int index_numbers_found = 0;
 
-    while (i < len && numbers.size()<HOURS_FORECAST) {
+    while (i < len && numbers.size() < HOURS_FORECAST) {
 
         // skip spaces
         while (i < len) {
@@ -362,40 +364,40 @@ extractNumbersFromString(const std::string &inputString, std::vector<double> &nu
         }
     }
 
-        return true;
-    }
+    return true;
+}
 
-    std::vector<double>
-    getForcast(pugi::xml_node dforecast_root, int hours_index, const std::string &search_elementName) {
+std::vector<double>
+getForcast(pugi::xml_node dforecast_root, int hours_index, const std::string &search_elementName) {
 
-        std::vector<double> forecast{};
-        DPF("getForecast: %s - %d\n", search_elementName.c_str(), hours_index);
+    std::vector<double> forecast{};
+    DPF("getForecast: %s - %d\n", search_elementName.c_str(), hours_index);
 
-        for (pugi::xml_node dt_fc: dforecast_root.children("dwd:Forecast")) {
+    for (pugi::xml_node dt_fc: dforecast_root.children("dwd:Forecast")) {
 
-            std::string elementName = dt_fc.attribute("dwd:elementName").value();
-            if (elementName == search_elementName) {
+        std::string elementName = dt_fc.attribute("dwd:elementName").value();
+        if (elementName == search_elementName) {
 
-                std::string data = dt_fc.child("dwd:value").text().get();
-                // all forecast values are in one string - extract the numbers
+            std::string data = dt_fc.child("dwd:value").text().get();
+            // all forecast values are in one string - extract the numbers
 
-                // compare elementName with string SunD1
-                if (elementName == "Neff") {
-                    extractNumbersFromString(data, forecast, hours_index, true);
-                } else {
-                    extractNumbersFromString(data, forecast, hours_index, false);
-                }
-
-                break;
+            // compare elementName with string SunD1
+            if (elementName == "Neff") {
+                extractNumbersFromString(data, forecast, hours_index, true);
+            } else {
+                extractNumbersFromString(data, forecast, hours_index, false);
             }
 
+            break;
         }
 
-        return forecast;
     }
 
+    return forecast;
+}
 
-    int determineWeatherIcon(const struct_HourlyWeather &hw) {
+
+int determineWeatherIcon(const struct_HourlyWeather &hw) {
 //    struct struct_HourlyWeather {
 //        tm time;
 //        int hour;
@@ -408,111 +410,109 @@ extractNumbersFromString(const std::string &inputString, std::vector<double> &nu
 //        int forecast_id;
 //    };
 
-        int fc_icon = NO_ICON_FOUND;
+    int fc_icon = NO_ICON_FOUND;
 
-        // check in DWD weather mapping if we find a fitting icon for DWD weather - if yes-take this
-        for (auto weather_id_map: weather_id_maps) {
-            if (weather_id_map.dwd_id == hw.forecast_id) {
-                DPF("Checking Icon from DWD:  %d with forecast %d\n", weather_id_map.icon_id, hw.forecast_id);
-                fc_icon = weather_id_map.icon_id;
-                break;
-            }
+    // check in DWD weather mapping if we find a fitting icon for DWD weather - if yes-take this
+    for (auto weather_id_map: weather_id_maps) {
+        if (weather_id_map.dwd_id == hw.forecast_id) {
+            DPF("Checking Icon from DWD:  %d with forecast %d\n", weather_id_map.icon_id, hw.forecast_id);
+            fc_icon = weather_id_map.icon_id;
+            break;
+        }
+    }
+
+    if (fc_icon != NO_ICON_FOUND) {
+        DPF("Found Icon from DWD:  %d\n", fc_icon);
+        return fc_icon;
+    }
+
+    DPL("No Icon found from DWD - checking alternative icons");
+
+    if (hw.rain == 0) {
+
+        // Check for the sun - measured in minutes
+        if ((hw.sun > 55) || (hw.clouds < 5)) {
+            return wi_Sunny;
         }
 
-        if (fc_icon != NO_ICON_FOUND) {
-            DPF("Found Icon from DWD:  %d\n", fc_icon);
-            return fc_icon;
+        if ((hw.sun > 45) || (hw.clouds < 10)) {
+            return wi_MostlySunny;
         }
 
-        DPL("No Icon found from DWD - checking alternative icons");
-
-        if (hw.rain == 0) {
-
-            // Check for the sun - measured in minutes
-            if ((hw.sun > 55) || (hw.clouds < 5)) {
-                return wi_Sunny;
-            }
-
-            if ((hw.sun > 45) || (hw.clouds < 10)) {
-                return wi_MostlySunny;
-            }
-
-            if ((hw.sun > 30) || (hw.clouds < 20)) {
-                return wi_PartlySunny;
-            }
-
-            if ((hw.sun > 10) || (hw.clouds < 40)) {
-                return wi_PartlyCloudy;
-            }
-
-            if (hw.clouds < 60) {
-                return wi_PartlyCloudy;
-            }
-
-            return wi_Cloudy;
+        if ((hw.sun > 30) || (hw.clouds < 20)) {
+            return wi_PartlySunny;
         }
 
-        if (hw.rain < 0.2) {
-            return wi_ChanceRain;
+        if ((hw.sun > 10) || (hw.clouds < 40)) {
+            return wi_PartlyCloudy;
         }
 
-        if (hw.rain < 0.5) {
-            return wi_Rain;
+        if (hw.clouds < 60) {
+            return wi_PartlyCloudy;
         }
 
         return wi_Cloudy;
-
     }
 
+    if (hw.rain < 0.2) {
+        return wi_ChanceRain;
+    }
 
-    void DWD_Weather(struct_Weather *ptr_myWF) {
+    if (hw.rain < 0.5) {
+        return wi_Rain;
+    }
 
-        DPL("DWD_Weather");
-        struct_Weather &myWF = *ptr_myWF;
+    return wi_Cloudy;
 
-        DPL("Downloading KML file...");
-        String localFilePath;
-        size_t p_len;
-        char *p = downloadKML(DWD_URL, &p_len);
+}
+
+
+void DWD_Weather(struct_Weather *ptr_myWF) {
+
+    DPL("DWD_Weather");
+    struct_Weather &myWF = *ptr_myWF;
+
+    DPL("Downloading KML file...");
+    String localFilePath;
+    size_t p_len;
+    char *p = downloadKML(DWD_URL, &p_len);
 //    char *str = (char *)p;
 //    DPL(str);
 
-        if (p) {
-            DPL("Parsing KML file...");
-            pugi::xml_document dwd_xml;
+    if (p) {
+        DPL("Parsing KML file...");
+        pugi::xml_document dwd_xml;
 
-            // Assuming the data in the buffer is null-terminated, otherwise you'd also need to pass the size
-            pugi::xml_parse_result result = dwd_xml.load_buffer(p, p_len);
-            if (result) {
-                DPL("KML file parsed successfully.");
-                std::time_t nowt = std::time(0);   // get time now
-                std::tm *now = std::localtime(&nowt);
+        // Assuming the data in the buffer is null-terminated, otherwise you'd also need to pass the size
+        pugi::xml_parse_result result = dwd_xml.load_buffer(p, p_len);
+        if (result) {
+            DPL("KML file parsed successfully.");
 
-                // Read Issue Time
-                pugi::xml_node dt_time = dwd_xml.child("kml:kml").
-                        child("kml:Document").
-                        child("kml:ExtendedData").
-                        child("dwd:ProductDefinition").
-                        child("dwd:IssueTime");
+            // Read Issue Time
+            pugi::xml_node dt_time = dwd_xml.child("kml:kml").
+                    child("kml:Document").
+                    child("kml:ExtendedData").
+                    child("dwd:ProductDefinition").
+                    child("dwd:IssueTime");
 
-                DPF("dt_time: %s\n", dt_time.first_child().value());
+            DPF("dt_time: %s\n", dt_time.first_child().value());
 
-                struct tm IssueTime{};
-                memset(&IssueTime, 0, sizeof(IssueTime));
-                // Use sscanf to extract date and time information
+            struct tm IssueTime{};
+            memset(&IssueTime, 0, sizeof(IssueTime));
+            // Use sscanf to extract date and time information
 
 // Use sscanf to extract date and time information
-                sscanf(dt_time.first_child().value(), "%d-%d-%dT%d:%d:%d",
-                       &IssueTime.tm_year,
-                       &IssueTime.tm_mon,
-                       &IssueTime.tm_mday,
-                       &IssueTime.tm_hour,
-                       &IssueTime.tm_min,
-                       &IssueTime.tm_sec);
+            sscanf(dt_time.first_child().value(), "%d-%d-%dT%d:%d:%d",
+                   &IssueTime.tm_year,
+                   &IssueTime.tm_mon,
+                   &IssueTime.tm_mday,
+                   &IssueTime.tm_hour,
+                   &IssueTime.tm_min,
+                   &IssueTime.tm_sec);
 
-                // Adjust the values to fit the 'tm' structure
-                IssueTime.tm_year -= 1900;
-                IssueTime.tm_mon -= 1;
+            // Adjust the values to fit the 'tm' structure
+            IssueTime.tm_year -= 1900;
+            IssueTime.tm_mon -= 1;
 
 /*
 
@@ -522,224 +522,269 @@ extractNumbersFromString(const std::string &inputString, std::vector<double> &nu
             std::tm IssueTime{};
             w_time >> std::get_time(&IssueTime, "%Y-%m-%dT%H:%M:%S"); // or just %T in this case
 */
-                DP("IssueTime: ");
-                PrintSerialTime(IssueTime);
-                DPL("");
+            DP("IssueTime: ");
+            PrintSerialTime(IssueTime);
+            DPL("");
 
-                myWF.publish_time = IssueTime;
+            myWF.publish_time = IssueTime;
 
-                // Extract hours into hours_index
+            // Extract hours into hours_index
 
-                DPL("Parsing Hours!");
+            DPL("Parsing Hours!");
 
-                pugi::xml_node dt_root = dwd_xml.child("kml:kml").
-                        child("kml:Document").
-                        child("kml:ExtendedData").
-                        child("dwd:ProductDefinition").
-                        child("dwd:ForecastTimeSteps");
-
-                std::time_t t = std::time(0);   // get time now
-                now = std::localtime(&t);
+            pugi::xml_node dt_root = dwd_xml.child("kml:kml").
+                    child("kml:Document").
+                    child("kml:ExtendedData").
+                    child("dwd:ProductDefinition").
+                    child("dwd:ForecastTimeSteps");
 
 
-                PrintSerialTime(*now);
-                DPL("<-Current time");
+            tm now = now_tm();
 
-                int hours_index, hours_offset;
-                std::tie(hours_index, hours_offset) = get_hour_index_for_time(ptr_myWF, now, dt_root);
 
-                // Extract weather data - jump to the right hour in
+            PrintSerialTime(now);
+            DPL("<-Current time");
 
-                pugi::xml_node dforecast_root = dwd_xml.
-                        child("kml:kml").
-                        child("kml:Document").
-                        child("kml:Placemark").
-                        child("kml:ExtendedData");
-                DPF("dforecast_root name: %s\n", dforecast_root.name());
-                DPF("Read the symbols!");
-                // Get all the weather data for the next 24 hours and store in HourlyWeather
+            int hours_index, hours_offset;
+            std::tie(hours_index, hours_offset) = get_hour_index_for_time(ptr_myWF, &now, dt_root);
 
-                // ************** Get Weather Symbol ************** by using the forecast value for ww
+            // Extract weather data - jump to the right hour in
 
-                std::vector<double> forecast_value = getForcast(dforecast_root, hours_index, "ww");
+            pugi::xml_node dforecast_root = dwd_xml.
+                    child("kml:kml").
+                    child("kml:Document").
+                    child("kml:Placemark").
+                    child("kml:ExtendedData");
+            DPF("dforecast_root name: %s\n", dforecast_root.name());
+            DPF("Read the symbols!");
+            // Get all the weather data for the next 24 hours and store in HourlyWeather
 
-                for (int i = 0; i < forecast_value.size(); ++i) {
+            // ************** Get Weather Symbol ************** by using the forecast value for ww
+
+            std::vector<double> forecast_value = getForcast(dforecast_root, hours_index, "ww");
+
+            for (int i = 0; i < forecast_value.size(); ++i) {
 //                DPF("Hour %d: %s\n", i, getWeatherString((int) forecast_value[i]).c_str());
-                    myWF.HourlyWeather[i].forecast_id = (int) forecast_value[i];
-                }
-
-
-                // ************** Get Temperature ************** by using the forecast value for TTT
-                forecast_value = getForcast(dforecast_root, hours_index, "TTT");
-
-                for (int i = 0; i < forecast_value.size(); ++i) {
-//                DPF("Hour %d: %f C\n", i, forecast_value[i] - 273.15);
-                    myWF.HourlyWeather[i].temperature = forecast_value[i] - 273.15;
-                }
-
-
-                // ************** Get Rain **************10 kg/m² Niederschlag entsprechen ungefähr 10 mm Niederschlag
-
-
-                forecast_value = getForcast(dforecast_root, hours_index, "RR1c");
-                for (int i = 0; i < forecast_value.size(); ++i) {
-//                DPF("Hour %d: %f mm\n", i, forecast_value[i]);
-                    myWF.HourlyWeather[i].rain = forecast_value[i];
-                }
-
-
-                // ************** Get Wind **************
-
-                forecast_value = getForcast(dforecast_root, hours_index, "FF");
-
-                for (int i = 0; i < forecast_value.size(); ++i) {
-                    auto wind_beaufort = static_cast<double >(std::round(forecast_value[i] * forecast_value[i] / 3.01));
-                    // DPF( "Hour %d: %f Bft\n", i, wind_beaufort);
-                    myWF.HourlyWeather[i].wind = mps_to_bft(forecast_value[i]);
-                }
-
-
-                // ************** Get Sun **************
-                forecast_value = getForcast(dforecast_root, hours_index, "SunD1");
-
-                for (int i = 0; i < forecast_value.size(); ++i) {
-
-                    myWF.HourlyWeather[i].sun = static_cast<double >(std::round(forecast_value[i] / 60));
-                }
-
-
-                // ************** Get Cloud **************
-
-                forecast_value = getForcast(dforecast_root, hours_index, "Neff");
-
-                for (int i = 0; i < forecast_value.size(); ++i) {
-                    myWF.HourlyWeather[i].clouds = forecast_value[i];
-                }
-
-
-
-                for (auto &hw: myWF.HourlyWeather) {
-                    printHourlyWeather(hw);
-                }
-
-                DPF("Done parsing weather data.");
-
-            } else {
-                DPL("ERROR: Failed to load and parse the KML file:");
-                DPL(result.description());
+                myWF.HourlyWeather[i].forecast_id = (int) forecast_value[i];
             }
 
-            DPL("Done");
 
+            // ************** Get Temperature ************** by using the forecast value for TTT
+            forecast_value = getForcast(dforecast_root, hours_index, "TTT");
+
+            for (int i = 0; i < forecast_value.size(); ++i) {
+//                DPF("Hour %d: %f C\n", i, forecast_value[i] - 273.15);
+                myWF.HourlyWeather[i].temperature = forecast_value[i] - 273.15;
+            }
+
+
+            // ************** Get Rain **************10 kg/m² Niederschlag entsprechen ungefähr 10 mm Niederschlag
+
+
+            forecast_value = getForcast(dforecast_root, hours_index, "RR1c");
+            for (int i = 0; i < forecast_value.size(); ++i) {
+//                DPF("Hour %d: %f mm\n", i, forecast_value[i]);
+                myWF.HourlyWeather[i].rain = forecast_value[i];
+            }
+
+
+            // ************** Get Wind **************
+
+            forecast_value = getForcast(dforecast_root, hours_index, "FF");
+
+            for (int i = 0; i < forecast_value.size(); ++i) {
+                auto wind_beaufort = static_cast<double >(std::round(forecast_value[i] * forecast_value[i] / 3.01));
+                // DPF( "Hour %d: %f Bft\n", i, wind_beaufort);
+                myWF.HourlyWeather[i].wind = mps_to_bft(forecast_value[i]);
+            }
+
+
+            // ************** Get Sun **************
+            forecast_value = getForcast(dforecast_root, hours_index, "SunD1");
+
+            for (int i = 0; i < forecast_value.size(); ++i) {
+
+                myWF.HourlyWeather[i].sun = static_cast<double >(std::round(forecast_value[i] / 60));
+            }
+
+
+            // ************** Get Cloud **************
+
+            forecast_value = getForcast(dforecast_root, hours_index, "Neff");
+
+            for (int i = 0; i < forecast_value.size(); ++i) {
+                myWF.HourlyWeather[i].clouds = forecast_value[i];
+            }
+
+
+            for (auto &hw: myWF.HourlyWeather) {
+                printHourlyWeather(hw);
+            }
+
+            DPF("Done parsing weather data.");
 
         } else {
-            DPL("Failed to load and parse the KML file.");
+            DPL("ERROR: Failed to load and parse the KML file:");
+            DPL(result.description());
         }
 
+        DPL("Done");
+
+
+    } else {
+        DPL("Failed to load and parse the KML file.");
     }
+
+}
 
 
 // Task to get weather data
 
-    void DWD_WeatherTask(void *pvParameters) {
-        Serial.begin(115200);
-        DPL("Getting weather data by running Task...");
+void DWD_WeatherTask(void *pvParameters) {
+    Serial.begin(115200);
+    DPL("Getting weather data by running Task...");
 
-        auto *ptr_my_Weather = (struct_Weather *) pvParameters;
+    auto *ptr_my_Weather = (struct_Weather *) pvParameters;
 
-        DWD_Weather(ptr_my_Weather);
-        DPL("Task - done getting weather data.");
-        b_wait_weather_data = true;
-        delay(1000);
-        vTaskDelete(NULL);
+    DWD_Weather(ptr_my_Weather);
+    DPL("Task - done getting weather data.");
+    b_wait_weather_data = true;
+    delay(1000);
+    vTaskDelete(NULL);
 
+}
+
+void GetWeather(struct_Weather *ptr_my_Weather) {
+    DPL("Getting weather data by starting task...");
+
+    b_wait_weather_data = false;
+
+    xTaskCreatePinnedToCore(
+            DWD_WeatherTask,   /* Function to implement the task */
+            "DWD_WeatherTask", /* Name of the task */
+            40000,      /* Stack size in words */
+            (void *) ptr_my_Weather,       /* Task input parameter */
+            0,          /* Priority of the task */
+            NULL,       /* Task handle. */
+            1);  /* Core where the task should run */
+
+
+    while (!b_wait_weather_data) {
+        delay(500);
     }
 
-    void GetWeather(struct_Weather *ptr_my_Weather) {
-        DPL("Getting weather data by starting task...");
+    DPL("Done getting weather data.");
+    b_wait_weather_data = true;
+}
 
-        b_wait_weather_data = false;
+bool returnHourIndexFromForecast(
+        const std::vector<struct_forecast_schedule> &schedule,
+        const std::array<struct_HourlyWeather, HOURS_FORECAST> *ptr_hourly_weather,
+        std::vector<int> *hours_index) {
 
-        xTaskCreatePinnedToCore(
-                DWD_WeatherTask,   /* Function to implement the task */
-                "DWD_WeatherTask", /* Name of the task */
-                40000,      /* Stack size in words */
-                (void *) ptr_my_Weather,       /* Task input parameter */
-                0,          /* Priority of the task */
-                NULL,       /* Task handle. */
-                1);  /* Core where the task should run */
+    // loop through schedule and find based on current time the right forecast
 
+    tm now= now_tm();
 
-        while (!b_wait_weather_data) {
-            delay(500);
+    const struct_forecast_schedule *forecasts_ptr = nullptr;
+
+    bool b_found = false;
+    for (auto &schedule_line: schedule) {
+        DPF("Checking schedule line: %d\n", schedule_line.check_hour);
+        if (now.tm_hour <= schedule_line.check_hour) {
+            DPL("Found schedule line");
+            forecasts_ptr = &schedule_line;
+            b_found = true;
+            break;
         }
-
-        DPL("Done getting weather data.");
-        b_wait_weather_data = true;
     }
 
-    bool returnHourIndexFromForecast(
-            const std::vector<struct_forecast_schedule> &schedule,
-            const std::array<struct_HourlyWeather, HOURS_FORECAST> *ptr_hourly_weather,
-            std::vector<int> *hours_index) {
+    if (!b_found) {
+        DPL("No schedule line found - woke up too early");
+        return false;
+    }
 
-        // loop through schedule and find based on current time the right forecast
+    for (const auto &hour_forecast: forecasts_ptr->forecast_hours) {
 
+        int check_yday = now.tm_yday;
+        if (hour_forecast < now.tm_hour) {
+            check_yday++;
+            DPF("Adding 1 to yday\n");
+        }
+        DPF("Looking for forecast at: %d YDay: %d\n", hour_forecast, check_yday);
 
-        std::time_t t = std::time(0);   // get time now
-        tm *now = std::localtime(&t);
+        int hour_index = 0;
+        bool b_found_index = false;
+        for (auto &hw: *ptr_hourly_weather) {
 
-        const struct_forecast_schedule *forecasts_ptr = nullptr;
-
-        bool b_found = false;
-        for (auto &schedule_line: schedule) {
-            DPF("Checking schedule line: %d\n", schedule_line.check_hour);
-            if (now->tm_hour <= schedule_line.check_hour) {
-                DPL("Found schedule line");
-                forecasts_ptr = &schedule_line;
-                b_found = true;
+            if ((hw.time.tm_hour == hour_forecast) && (hw.time.tm_yday == check_yday)) {
+                DPF("FOUND: Index: %d - Hour: %d - Wday: %d\n", hour_index, hw.time.tm_hour, hw.time.tm_yday);
+                b_found_index = true;
                 break;
+
+            } else {
+                DPF("Check: Index: %d - Hour: %d - Wday: %d\n", hour_index, hw.time.tm_hour, hw.time.tm_yday);
             }
+
+            hour_index++;
         }
 
-        if (!b_found) {
-            DPL("No schedule line found - woke up too early");
-            return false;
+        if (b_found_index) {
+            hours_index->push_back(hour_index);
+            DPF("Added index: %d\n", hour_index);
+        } else {
+            DPL("No index found");
         }
 
-        for (const auto &hour_forecast: forecasts_ptr->forecast_hours) {
+    }
 
-            int check_yday = now->tm_yday;
-            if (hour_forecast < now->tm_hour) {
-                check_yday++;
-                DPF("Adding 1 to yday\n");
-            }
-            DPF("Looking for forecast at: %d YDay: %d\n", hour_forecast, check_yday);
+    return true;
+}
 
-            int hour_index = 0;
-            bool b_found_index = false;
-            for (auto &hw: *ptr_hourly_weather) {
+void CheckAndPrepareWeather() {
+#define PREPARE_WAKEUP 15
+    /* Prepare for Alarm wakeup ***************************************************************************/
+    DateTime rtc_alarm = {};
+    DateTime now = now_datetime();
 
-                if ((hw.time.tm_hour == hour_forecast) && (hw.time.tm_yday == check_yday)) {
-                    DPF("FOUND: Index: %d - Hour: %d - Wday: %d\n", hour_index, hw.time.tm_hour, hw.time.tm_yday);
-                    b_found_index = true;
-                    break;
+    if (rtc_watch.getAlarm2(&rtc_alarm, now)) {
+        DateTime prepare_wakeuptime = rtc_alarm - TimeSpan(0, 0, PREPARE_WAKEUP, 0);
+        DPF("Time Now: %s\n",DateTimeString(now).c_str());
+        DPF("Prep Wakeup time: %s\n",DateTimeString(prepare_wakeuptime).c_str());
+        TimeSpan diff = now -prepare_wakeuptime ;
 
-                } else {
-                    DPF("Check: Index: %d - Hour: %d - Wday: %d\n", hour_index, hw.time.tm_hour, hw.time.tm_yday);
+        DPF("Time for prepare-wakupe: Days: %i Hours: %i Minutes:%i\n", diff.days(), diff.hours(),
+            diff.minutes());
+
+        // If we have x minute before alarm and dont have any weather data in SPIFFS - get it
+
+        if (
+                (diff.minutes()>=0) && (diff.minutes()< PREPARE_WAKEUP) &&
+                (diff.hours() == 0) && (diff.days() == 0))
+        {
+
+            if (!CheckWeatherInSPIFF()) {
+                DPL("!!! No Weather in SPIFF - get fresh weather data");
+                auto *ptr_Weather = (struct_Weather *) ps_malloc(sizeof(struct_Weather));
+                if (ptr_Weather == nullptr) {
+                    DPL("Error allocating memory for Weather");
                 }
 
-                hour_index++;
-            }
+                DPL("!!! Prepare Wakeup activities");
+                DPF("Free heap: %d/%d %d max block\n", ESP.getFreeHeap(), ESP.getHeapSize(), ESP.getMaxAllocHeap());
+                DPF("Free PSRAM: %d/%d %d max block\n", ESP.getFreePsram(), ESP.getPsramSize(), ESP.getMaxAllocPsram());
 
-            if (b_found_index) {
-                hours_index->push_back(hour_index);
-                DPF("Added index: %d\n", hour_index);
+                GetWeather(ptr_Weather);
+                StoreWeatherToSpiffs(ptr_Weather);
+
             } else {
-                DPL("No index found");
+                DPL("!!! Prepare Wakeup activities - Weather data already in SPIFFS");
             }
 
+        } else {
+            DPL("!!! Alarm Found - not time do prepare wakeup");
         }
-
-        return true;
+    } else {
+        DPL("!!! No Alarm found on RTC-Data - dont do anything");
     }
+}

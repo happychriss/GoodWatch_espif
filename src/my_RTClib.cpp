@@ -748,7 +748,8 @@ TimeSpan::TimeSpan(const TimeSpan &copy) : _seconds(copy._seconds) {}
     @return New TimeSpan object, sum of left and right
 */
 /**************************************************************************/
-TimeSpan TimeSpan::operator+(const TimeSpan &right) const {
+TimeSpan
+TimeSpan::operator+(const TimeSpan &right) const {
     return TimeSpan(_seconds + right._seconds);
 }
 
