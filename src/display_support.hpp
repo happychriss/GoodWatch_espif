@@ -172,7 +172,8 @@ void dim_light_up_down_task(void *parameter) {
         ambient_light = distance_sensor.readAmbientSingle();
         DPF("*** Ambient Light:%i\n", ambient_light);
 
-        if (ambient_light<2) { global_light_enabled_level= MAX_LIGHT_ENABLE_LEVEL / 2;}
+        if (ambient_light<2) { global_light_enabled_level= MAX_LIGHT_ENABLE_LEVEL / 4;}
+        else if (ambient_light<4) { global_light_enabled_level= MAX_LIGHT_ENABLE_LEVEL / 2;}
         else if (ambient_light<10)  { global_light_enabled_level=MAX_LIGHT_ENABLE_LEVEL;}
         else global_light_enabled_level=0;
 

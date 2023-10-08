@@ -2,7 +2,7 @@
 .pio
 CMakeListsPrivate.txt
 cmake-build-*/
-include/WiFiCredentials.h
+include/Credentials.h
 
 ### C++ template
 # Prerequisites
@@ -116,3 +116,4 @@ fabric.properties
 
 /data/good_morning_short.mp3
 /data/guitar.mp3
+/include/Credentials.h

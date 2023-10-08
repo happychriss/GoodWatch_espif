@@ -28,17 +28,17 @@
 #include "support.h"
 
 bool b_wait_weather_data = true;
-extern RTC_DS3231 rtc_watch;
 
-int mps_to_bft(double windSpeed) {
+
+double mps_to_bft(double windSpeed) {
+    double my_windspeed=round(windSpeed * 10.0) / 10.0;
     for (const auto &scale: beaufortScale) {
-        if ((windSpeed >= scale.lowerBound) && (scale.upperBound == -1 || windSpeed <= scale.upperBound)) {
+        if ((my_windspeed >= scale.lowerBound) && (scale.upperBound == -1 || my_windspeed <= scale.upperBound)) {
             return scale.beaufortNumber;
         }
     }
     return -1; // This line should never be reached, added for completeness
 }
-
 
 
 void printHourlyWeather(struct_HourlyWeather hw) {
@@ -67,9 +67,6 @@ String getWeatherString(int number) {
 
 char *downloadKML(const String fetch_url, size_t *buffer_len) {
 
-
-    DPL("Enabling Wifi");
-    SetupWifi();
 
 
 //    Serial.printf("Fetching URL: %s\n", url.c_str());
@@ -382,7 +379,7 @@ getForcast(pugi::xml_node dforecast_root, int hours_index, const std::string &se
             // all forecast values are in one string - extract the numbers
 
             // compare elementName with string SunD1
-            if (elementName == "Neff") {
+            if (elementName == "xxNeff") {
                 extractNumbersFromString(data, forecast, hours_index, true);
             } else {
                 extractNumbersFromString(data, forecast, hours_index, false);
@@ -593,9 +590,9 @@ void DWD_Weather(struct_Weather *ptr_myWF) {
             forecast_value = getForcast(dforecast_root, hours_index, "FF");
 
             for (int i = 0; i < forecast_value.size(); ++i) {
-                auto wind_beaufort = static_cast<double >(std::round(forecast_value[i] * forecast_value[i] / 3.01));
-                // DPF( "Hour %d: %f Bft\n", i, wind_beaufort);
+
                 myWF.HourlyWeather[i].wind = mps_to_bft(forecast_value[i]);
+                DPF("Hour %d: %f m/s %f Bft\n", i, forecast_value[i], mps_to_bft(forecast_value[i]));
             }
 
 
@@ -616,6 +613,7 @@ void DWD_Weather(struct_Weather *ptr_myWF) {
                 myWF.HourlyWeather[i].clouds = forecast_value[i];
             }
 
+            // ************** Print the Weather**************
 
             for (auto &hw: myWF.HourlyWeather) {
                 printHourlyWeather(hw);
@@ -684,7 +682,7 @@ bool returnHourIndexFromForecast(
 
     // loop through schedule and find based on current time the right forecast
 
-    tm now= now_tm();
+    tm now = now_tm();
 
     const struct_forecast_schedule *forecasts_ptr = nullptr;
 
@@ -692,7 +690,7 @@ bool returnHourIndexFromForecast(
     for (auto &schedule_line: schedule) {
         DPF("Checking schedule line: %d\n", schedule_line.check_hour);
         if (now.tm_hour <= schedule_line.check_hour) {
-            DPL("Found schedule line");
+            DPF("Found schedule line: %d", schedule_line.check_hour);
             forecasts_ptr = &schedule_line;
             b_found = true;
             break;
@@ -707,9 +705,9 @@ bool returnHourIndexFromForecast(
     for (const auto &hour_forecast: forecasts_ptr->forecast_hours) {
 
         int check_yday = now.tm_yday;
-        if (hour_forecast < now.tm_hour) {
+        if (hour_forecast < forecasts_ptr->check_hour) {
             check_yday++;
-            DPF("Adding 1 to yday\n");
+            DPF(" <- Adding 1 to yday\n");
         }
         DPF("Looking for forecast at: %d YDay: %d\n", hour_forecast, check_yday);
 
@@ -741,50 +739,3 @@ bool returnHourIndexFromForecast(
     return true;
 }
 
-void CheckAndPrepareWeather() {
-#define PREPARE_WAKEUP 15
-    /* Prepare for Alarm wakeup ***************************************************************************/
-    DateTime rtc_alarm = {};
-    DateTime now = now_datetime();
-
-    if (rtc_watch.getAlarm2(&rtc_alarm, now)) {
-        DateTime prepare_wakeuptime = rtc_alarm - TimeSpan(0, 0, PREPARE_WAKEUP, 0);
-        DPF("Time Now: %s\n",DateTimeString(now).c_str());
-        DPF("Prep Wakeup time: %s\n",DateTimeString(prepare_wakeuptime).c_str());
-        TimeSpan diff = now -prepare_wakeuptime ;
-
-        DPF("Time for prepare-wakupe: Days: %i Hours: %i Minutes:%i\n", diff.days(), diff.hours(),
-            diff.minutes());
-
-        // If we have x minute before alarm and dont have any weather data in SPIFFS - get it
-
-        if (
-                (diff.minutes()>=0) && (diff.minutes()< PREPARE_WAKEUP) &&
-                (diff.hours() == 0) && (diff.days() == 0))
-        {
-
-            if (!CheckWeatherInSPIFF()) {
-                DPL("!!! No Weather in SPIFF - get fresh weather data");
-                auto *ptr_Weather = (struct_Weather *) ps_malloc(sizeof(struct_Weather));
-                if (ptr_Weather == nullptr) {
-                    DPL("Error allocating memory for Weather");
-                }
-
-                DPL("!!! Prepare Wakeup activities");
-                DPF("Free heap: %d/%d %d max block\n", ESP.getFreeHeap(), ESP.getHeapSize(), ESP.getMaxAllocHeap());
-                DPF("Free PSRAM: %d/%d %d max block\n", ESP.getFreePsram(), ESP.getPsramSize(), ESP.getMaxAllocPsram());
-
-                GetWeather(ptr_Weather);
-                StoreWeatherToSpiffs(ptr_Weather);
-
-            } else {
-                DPL("!!! Prepare Wakeup activities - Weather data already in SPIFFS");
-            }
-
-        } else {
-            DPL("!!! Alarm Found - not time do prepare wakeup");
-        }
-    } else {
-        DPL("!!! No Alarm found on RTC-Data - dont do anything");
-    }
-}

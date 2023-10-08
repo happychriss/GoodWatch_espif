@@ -98,7 +98,7 @@ void espPrintTimeNow() {
 }
 
 void PrintSerialTime(tm tm) {
-    DPL(DateTimeString(tm_2_datetime(tm)));
+    DP(DateTimeString(tm_2_datetime(tm)));
 }
 
 

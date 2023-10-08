@@ -155,7 +155,9 @@ void printOnForecast(GxEPD2_GFX &d, struct_HourlyWeather fc, int y_offset) {
 
 void DrawWeatherToDisplay(GxEPD2_GFX &d, struct_Weather *Weather, std::vector<int> hours_for_index) {
 
-    DPL("Draw WeatherToDisplay");
+    DPL("Draw WeatherToDisplay:");
+    printHourlyWeather(Weather->HourlyWeather[hours_for_index[0]]);
+    printHourlyWeather(Weather->HourlyWeather[hours_for_index[1]]);
 
     char str_time_publish_time[20];
     strftime(str_time_publish_time, sizeof(str_time_publish_time), "%H:%M %d.%m.%y", &(Weather->publish_time));

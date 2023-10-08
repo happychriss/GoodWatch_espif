@@ -108,7 +108,7 @@ void battery_sent() {
     HTTPClient http;
     http.begin(client, "http://192.168.1.110:8088/voltage");
     http.addHeader("Content-Type", "application/json");
-    String source = "\"source\":\"GW_Production\"";
+    String source = "\"source\":\"GW_Prodv2\"";
     String voltage = "\"voltage\":\"" + String(BatteryVoltage, 2) + "\"";
     String httpRequestData = "{" + source + "," + voltage + "}";
     DP("RequestString:");
@@ -248,7 +248,7 @@ void loop() {
             display.init(DEBUG_DISPLAY, false);
             PaintWatch(display, true, false);
 
-            CheckAndPrepareWeather();
+            PrepareWeather();
 
             /* ***************************************************************************/
 
@@ -339,7 +339,7 @@ void loop() {
                 display.clearScreen();
                 PaintWatch(display, false, false);
 */
-            } else if (avg_proximity_data < 45) { //hand a bit away and its not dark
+            } else if (avg_proximity_data < 30) { //hand a bit away and its not dark
 
 /*          // **********************************************************************************************
             // Medium Close - Show Alarm Screen ********** **************************************************
@@ -391,10 +391,10 @@ void loop() {
 
 
     while (global_light_enabled_level > 0 or !b_audio_finished) {
-        DPL("WAIT for Light or Sound to finish");
+        DP(".");
         wait_count++;
         if (wait_count > 500) {
-            DPL("TimeOut on waiting - something wrong here - BREAK Loop");
+            DPF("\nTimeOut on waiting - something wrong here - BREAK Loop\n");
             break;
         }
         delay(10);

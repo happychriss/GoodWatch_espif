@@ -5,7 +5,7 @@
 #ifndef GOODWATCH_WIFI_SUPPORT_H
 #define GOODWATCH_WIFI_SUPPORT_H
 #include <WiFi.h>
-#include "WiFiCredentials.h"
+#include "Credentials.h"
 #include "WiFiClient.h"
 #include <HTTPClient.h>
 #include <lwip/apps/sntp.h>

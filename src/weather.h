@@ -31,9 +31,10 @@
 #define MOSMIX_ZIP_FILE  "/spiffs/MOSMIX_L_LATEST.kmz"
 #define MOSMIX_FILE  "/spiffs/MOSMIX_L_LATEST.kml"
 
+#define FORCAST_HORIZONT 2
 struct struct_forecast_schedule {
     int check_hour;
-    std::array<int, 3> forecast_hours;
+    std::array<int, FORCAST_HORIZONT> forecast_hours;
 };
 
 
@@ -227,7 +228,7 @@ bool returnHourIndexFromForecast(
         std::vector <int> *hours_index);
 
 String getWeatherString(int number);
-void CheckAndPrepareWeather();
+
 #endif
 
 

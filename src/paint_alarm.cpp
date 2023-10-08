@@ -240,7 +240,7 @@ void ProgramAlarm(GxEPD2_GFX &d) {
 
         value_idx = GetVoiceCommand();
 
-        if (value_idx == ANSWER_NO || value_idx == ANSWER_TIMEOUT) {
+        if (value_idx == ANSWER_YES || value_idx == ANSWER_TIMEOUT) {
             b_menu_loop = false;
             break;
         }
@@ -468,6 +468,8 @@ void PaintAlarmScreen(GxEPD2_GFX &d, const char title[]) {
         PLAlarm(d, 3, "4: Mo-Fr", false, true);
 
         PLAlarm(d, 4, "5: Bike", false, true);
+
+        PL(d, CONFIRM_LINE, 1, "Fertig? [ja]", false, true);
 
 
     } while (d.nextPage());
