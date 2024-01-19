@@ -9,8 +9,8 @@
 #include <GxEPD2_BW.h>
 #include <GxEPD2_GFX.h>
 void Load_PaintWeather(GxEPD2_GFX &d);
-void StoreWeatherToSpiffs(struct_Weather *Weather);
-void ReadWeatherFromSPIFF(struct_Weather *Weather);
+void StoreWeatherToSpiffs(struct_Weather *pWeather);
+void ReadWeatherFromSPIFF(struct_Weather *pWeather);
 void DrawWeatherToDisplay(GxEPD2_GFX &d, struct_Weather *Weather, std::vector<int> hours_for_index);
 void DeleteWeatherFromSPIFF();
 bool CheckWeatherInSPIFF();

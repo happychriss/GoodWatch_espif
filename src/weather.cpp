@@ -30,6 +30,36 @@
 bool b_wait_weather_data = true;
 
 
+
+uint32_t calculateWeatherCRC(struct_Weather &weather) {
+
+    const auto *data = reinterpret_cast<const unsigned char *>(&weather);
+    size_t length = sizeof(weather) - sizeof(weather.crc);
+
+    uint32_t crc = 0xffffffff;
+    while (length--) {
+        unsigned char c = *data++;
+        for (uint32_t i = 0x80; i > 0; i >>= 1) {
+            bool bit = crc & 0x80000000;
+            if (c & i) {
+                bit = !bit;
+            }
+
+            crc <<= 1;
+            if (bit) {
+                crc ^= 0x04c11db7;
+            }
+        }
+    }
+
+
+    crc = ~crc; // Usually, CRC is returned inverted
+
+    DPF("CRC Calculated: %lu\n", crc);
+
+    return crc;
+}
+
 double mps_to_bft(double windSpeed) {
     double my_windspeed=round(windSpeed * 10.0) / 10.0;
     for (const auto &scale: beaufortScale) {
@@ -652,7 +682,7 @@ void DWD_WeatherTask(void *pvParameters) {
 
 }
 
-void GetWeather(struct_Weather *ptr_my_Weather) {
+void GetWeather(struct_Weather *ptrWeather) {
     DPL("Getting weather data by starting task...");
 
     b_wait_weather_data = false;
@@ -661,7 +691,7 @@ void GetWeather(struct_Weather *ptr_my_Weather) {
             DWD_WeatherTask,   /* Function to implement the task */
             "DWD_WeatherTask", /* Name of the task */
             40000,      /* Stack size in words */
-            (void *) ptr_my_Weather,       /* Task input parameter */
+            (void *) ptrWeather,       /* Task input parameter */
             0,          /* Priority of the task */
             NULL,       /* Task handle. */
             1);  /* Core where the task should run */
@@ -676,20 +706,20 @@ void GetWeather(struct_Weather *ptr_my_Weather) {
 }
 
 bool returnHourIndexFromForecast(
+        const tm check_time,
         const std::vector<struct_forecast_schedule> &schedule,
         const std::array<struct_HourlyWeather, HOURS_FORECAST> *ptr_hourly_weather,
         std::vector<int> *hours_index) {
 
     // loop through schedule and find based on current time the right forecast
 
-    tm now = now_tm();
-
+//    struct tm tm_check_time = check_time.to_tm();
     const struct_forecast_schedule *forecasts_ptr = nullptr;
 
     bool b_found = false;
     for (auto &schedule_line: schedule) {
         DPF("Checking schedule line: %d\n", schedule_line.check_hour);
-        if (now.tm_hour <= schedule_line.check_hour) {
+        if (check_time.tm_hour <= schedule_line.check_hour) {
             DPF("Found schedule line: %d", schedule_line.check_hour);
             forecasts_ptr = &schedule_line;
             b_found = true;
@@ -704,7 +734,7 @@ bool returnHourIndexFromForecast(
 
     for (const auto &hour_forecast: forecasts_ptr->forecast_hours) {
 
-        int check_yday = now.tm_yday;
+        int check_yday = tm_check_time.tm_yday;
         if (hour_forecast < forecasts_ptr->check_hour) {
             check_yday++;
             DPF(" <- Adding 1 to yday\n");

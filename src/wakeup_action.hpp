@@ -121,6 +121,7 @@ void PrepareWeather() {
 
                 DPL("!!! Prepare Wakeup activities");
                 GetWeather(ptr_Weather);
+                ptr_Weather->crc = calculateWeatherCRC(*ptr_Weather);
                 StoreWeatherToSpiffs(ptr_Weather);
 
             } else {
@@ -144,8 +145,16 @@ void WakeUpRoutine(GxEPD2_GFX &d) {
     String str_weather = "Kein Wetter!";
     bool b_weather = CheckWeatherInSPIFF();
     if (b_weather) {
-        str_weather = "*Wetter*";
+        if (true) {
+//        if (validateWeatherCRC()) {
+            str_weather = "*Wetter*";
+        } else {
+            str_weather = "*CRC Error*";
+            DeleteWeatherFromSPIFF();
+            b_weather=false;
+        }
     }
+
     display.setTextColor(GxEPD_BLACK);
     display.setFont(&FreeSans12pt7b);
     display.firstPage();

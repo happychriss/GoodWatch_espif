@@ -4,6 +4,7 @@
 
 #ifndef GOODWATCH_RTC_SUPPORT_H
 #define GOODWATCH_RTC_SUPPORT_H
+
 #include <my_RTClib.h>
 #include <global_display.h>
 #include <support.h>
@@ -12,24 +13,34 @@
 #include "esp_system.h"
 #include "nvs_flash.h"
 #include "nvs.h"
+#include "weather.h"
 
 #define ALARM1_5_MIN 1
 #define ALARM2_ALARM 2
 
 String DateTimeString(DateTime dt);
-void rtcPrintTimeNow() ;
-void rtcInit() ;
-void rtcSetRTCFromInternet() ;
-void espPrintTimeNow() ;
+
+void rtcPrintTimeNow();
+
+void rtcInit();
+
+void rtcSetRTCFromInternet();
+
+void espPrintTimeNow();
+
 void rtsSetEspTime(DateTime dt);
+
 void PrintSerialTime(tm tm);
 
 
-DateTime  now_datetime();
-String rtcFormatCurrentTime(char * str_format);
+DateTime now_datetime();
+
+String rtcFormatCurrentTime(char *str_format);
+
 void I2C_Scanner();
+
 struct strct_alarm {
-    uint8_t i =0;
+    uint8_t i = 0;
     bool active = {false};
     bool valid = {false};
     DateTime time;
@@ -45,7 +56,6 @@ enum time_set_t {
     leave, hour1, hour2, min1, min2, done, command
 };
 #define ENUM_SPECIAL =10
-
 
 
 class RtcData {
@@ -84,14 +94,16 @@ public:
         }
         DPL("*************");
     }
+
 #define STORAGE_NAMESPACE "storage"
-void writeRTCData() {
+
+    void writeRTCData() {
         DPF("Write RTC-Data - Incoming buffer[%lu bytes]:\n", sizeof(d));
         PrintAlarms();
 
         d.crc32 = calculateCRC32(((uint8_t *) &d) + 4, sizeof(d) - 4);
-  /*      DP("RTC-Calc: ");
-        DPL(d.crc32);*/
+        /*      DP("RTC-Calc: ");
+              DPL(d.crc32);*/
 
         nvs_handle my_handle;
         esp_err_t err;
@@ -140,10 +152,12 @@ void writeRTCData() {
         PrintAlarms();
     }
 
+    /*--------------------------------------
+     *
+     */
 
 
 private:
-
 
     uint32_t calculateCRC32(const uint8_t *data, size_t length) {
         uint32_t crc = 0xffffffff;
@@ -164,15 +178,7 @@ private:
 
         return crc;
     }
-};
-
-
-class rtc_support {
-
 
 
 };
-
-
-
 #endif //GOODWATCH_RTC_SUPPORT_H

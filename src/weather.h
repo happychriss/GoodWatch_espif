@@ -196,6 +196,8 @@ namespace Weather {
 //struct std::tm TimeSteps[HOURS_FORECAST];
 
 
+
+
 struct struct_HourlyWeather {
     tm time;
     int hour_index;
@@ -210,13 +212,15 @@ struct struct_HourlyWeather {
 struct struct_Weather {
     tm publish_time;
     std::array<struct_HourlyWeather, HOURS_FORECAST> HourlyWeather;
+    uint32_t dummy; // CRC field
+    uint32_t crc; // CRC field
 };
 
 
 
-
 // extern struct_HourlyWeather HourlyWeather[HOURS_FORECAST];
-void GetWeather(struct_Weather *ptr_my_Weather);
+void GetWeather(struct_Weather *ptrWeather);
+uint32_t calculateWeatherCRC(struct_Weather &weather);
 void DWD_Weather(struct_Weather*  ptr_myWF);
 void coreTask( void * pvParameters );
 int determineWeatherIcon(const struct_HourlyWeather &hw);

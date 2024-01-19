@@ -229,7 +229,9 @@ bool CheckWeatherInSPIFF() {
     }
 
     if (SPIFFS.exists("/weather.bin")) {
-        DPL("Weather in Spiffs");
+        DPL("Weather in Spiffs - validating CRC Code");
+
+
         return true;
     } else {
         DPL("Weather not in Spiffs");
@@ -239,7 +241,7 @@ bool CheckWeatherInSPIFF() {
 
 
 // Read Weather fom Spiffs
-void ReadWeatherFromSPIFF(struct_Weather *Weather) {
+void ReadWeatherFromSPIFF(struct_Weather *pWeather) {
 
     DPL("Get Weather from Spiffs");
 
@@ -255,18 +257,22 @@ void ReadWeatherFromSPIFF(struct_Weather *Weather) {
         return;
     }
 
-    file.read((uint8_t *) Weather, sizeof(struct_Weather));
+    size_t length =file.read((uint8_t *) pWeather, sizeof(struct_Weather));
+    DPF("Read %d bytes from SPIFFS\n", length);
 
     file.close();
+
+    DPF("Read Weather from Spiffs with CRC: %lu\n", pWeather->crc);
 
     DPL("Done");
 }
 
 
 
-void StoreWeatherToSpiffs(struct_Weather *Weather) {
+void StoreWeatherToSpiffs(struct_Weather *pWeather) {
 
-    DPL("Store Weather to Spiffs");
+
+    DPF("Store Weather to Spiffs with CRC: %lu\n", pWeather->crc);
 
     if (!SPIFFS.begin(true)) {
         DPL("An Error has occurred while mounting SPIFFS");
@@ -280,7 +286,8 @@ void StoreWeatherToSpiffs(struct_Weather *Weather) {
         return;
     }
 
-    file.write((uint8_t *) Weather, sizeof(struct_Weather));
+    size_t length =file.write((uint8_t *) pWeather, sizeof(struct_Weather));
+    DPF("Wrote %d bytes to SPIFFS\n", length);
 
     file.close();
 

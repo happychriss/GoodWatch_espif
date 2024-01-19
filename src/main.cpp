@@ -12,6 +12,8 @@
 #include <ArduinoOTA.h>
 #include <SPIFFS.h>
 #include "esp_spiffs.h"
+#include <memory>
+#include <cstring>
 
 // various
 
@@ -33,6 +35,7 @@
 #include <paint_watch.h>
 #include <esp_wifi.h>
 #include <inference_sound.h>
+#include "rtc_support.h"
 
 
 // #define DATA_ACQUISITION -> check in file support.h
@@ -41,6 +44,7 @@
 #define DEBUG_DISPLAY 0 //115200
 
 #define LIGHT_IS_ON 0
+
 
 
 // esptool to reset Goodwacht
@@ -108,7 +112,7 @@ void battery_sent() {
     HTTPClient http;
     http.begin(client, "http://192.168.1.110:8088/voltage");
     http.addHeader("Content-Type", "application/json");
-    String source = "\"source\":\"GW_Prodv2\"";
+    String source = "\"source\":\"GW_Dev\"";
     String voltage = "\"voltage\":\"" + String(BatteryVoltage, 2) + "\"";
     String httpRequestData = "{" + source + "," + voltage + "}";
     DP("RequestString:");
@@ -305,6 +309,45 @@ void loop() {
 
     if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0) {
         DPL("!!!! PIR Sensor Wakeup !!!! ");
+
+
+        // Testing START
+        auto* ptr_Weather = new struct_Weather();
+        memset(ptr_Weather, 0, sizeof(struct_Weather));
+        //init Weather with zero
+
+
+        DPF("Free heap: %d/%d %d max block\n", ESP.getFreeHeap(), ESP.getHeapSize(), ESP.getMaxAllocHeap());
+        DPF("Free PSRAM: %d/%d %d max block\n", ESP.getFreePsram(), ESP.getPsramSize(), ESP.getMaxAllocPsram());
+        DPF("Weather Struct Size: %lu\n",sizeof(struct_Weather));
+        DPF("Weather Struct Size: %lu\n",sizeof(*ptr_Weather));
+
+        SetupWifi();
+        GetWeather(ptr_Weather);
+
+        ptr_Weather->crc=calculateWeatherCRC(*ptr_Weather);
+        DPF("CRC to write: %lu\n", ptr_Weather->crc);
+        StoreWeatherToSpiffs(ptr_Weather);
+        DPF("CRC recacl: %lu\n",  calculateWeatherCRC(*ptr_Weather));
+
+        auto* ptr_Weather_back = new struct_Weather();
+        memset(ptr_Weather_back, 0, sizeof(struct_Weather));
+
+        ReadWeatherFromSPIFF(ptr_Weather_back);
+        DPF("CRC read: %lu\n", ptr_Weather_back->crc);
+        uint32_t crc_new = calculateWeatherCRC(*ptr_Weather_back);
+        DPF("CRC read calc: %lu\n",crc_new);
+
+        if (ptr_Weather->crc ==crc_new) {
+            DPL("CRC are equal");
+        } else {
+            DPL("CRC are NOT equal");
+        }
+
+        // free memory
+        delete ptr_Weather;
+        delete ptr_Weather_back;
+
 
         int light_level = GetMaxLightLevel();
 
