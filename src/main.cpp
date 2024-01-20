@@ -311,42 +311,51 @@ void loop() {
         DPL("!!!! PIR Sensor Wakeup !!!! ");
 
 
-        // Testing START
-        auto* ptr_Weather = new struct_Weather();
-        memset(ptr_Weather, 0, sizeof(struct_Weather));
-        //init Weather with zero
-
+        SetupWifi();
+        auto *ptr_AlarmWeather = new struct_AlarmWeather();
+        memset(ptr_AlarmWeather, 0, sizeof(struct_AlarmWeather));
 
         DPF("Free heap: %d/%d %d max block\n", ESP.getFreeHeap(), ESP.getHeapSize(), ESP.getMaxAllocHeap());
         DPF("Free PSRAM: %d/%d %d max block\n", ESP.getFreePsram(), ESP.getPsramSize(), ESP.getMaxAllocPsram());
-        DPF("Weather Struct Size: %lu\n",sizeof(struct_Weather));
-        DPF("Weather Struct Size: %lu\n",sizeof(*ptr_Weather));
+        DPF("WeatherAlarm Struct Size: %lu\n", sizeof(struct_AlarmWeather));
+        DPF("Weather Struct Size: %lu\n", sizeof(*ptr_AlarmWeather));
 
-        SetupWifi();
-        GetWeather(ptr_Weather);
+        String str_weather;
+        DateTime rtc_alarm = rtc_watch.now();
 
-        ptr_Weather->crc=calculateWeatherCRC(*ptr_Weather);
-        DPF("CRC to write: %lu\n", ptr_Weather->crc);
-        StoreWeatherToSpiffs(ptr_Weather);
-        DPF("CRC recacl: %lu\n",  calculateWeatherCRC(*ptr_Weather));
+        bool valid = GetValidForecast(rtc_alarm, ptr_AlarmWeather, str_weather);
 
-        auto* ptr_Weather_back = new struct_Weather();
-        memset(ptr_Weather_back, 0, sizeof(struct_Weather));
+        DPF("Check Weather Result: %s\n", str_weather.c_str());
 
-        ReadWeatherFromSPIFF(ptr_Weather_back);
-        DPF("CRC read: %lu\n", ptr_Weather_back->crc);
-        uint32_t crc_new = calculateWeatherCRC(*ptr_Weather_back);
-        DPF("CRC read calc: %lu\n",crc_new);
+        if (!valid) {
 
-        if (ptr_Weather->crc ==crc_new) {
-            DPL("CRC are equal");
-        } else {
-            DPL("CRC are NOT equal");
+            SetupWifi();
+
+            auto *ptr_Weather = new struct_Weather();
+            memset(ptr_Weather, 0, sizeof(struct_Weather));
+
+            DPL("!!! Prepare Wakeup activities");
+            GetWeather(ptr_Weather);
+            GetAlarmWeather(rtc_alarm, ptr_Weather, ptr_AlarmWeather);
+
+            ptr_AlarmWeather->crc = calculateWeatherCRC(*ptr_AlarmWeather);
+            StoreWeatherToSpiffs(ptr_AlarmWeather);
+
         }
 
+        memset(ptr_AlarmWeather, 0, sizeof(struct_AlarmWeather));
+
+        valid = GetValidForecast(rtc_alarm, ptr_AlarmWeather, str_weather);
+        if (valid) {
+            display.init(DEBUG_DISPLAY, true);
+            display.clearScreen();
+            DrawWeatherToDisplay(display, ptr_AlarmWeather);
+            DeleteWeatherFromSPIFF();
+        }
+
+
         // free memory
-        delete ptr_Weather;
-        delete ptr_Weather_back;
+        delete ptr_AlarmWeather;
 
 
         int light_level = GetMaxLightLevel();
@@ -371,7 +380,7 @@ void loop() {
             if (avg_proximity_data < -20) { //hand is very close ---------- disabled ----------------------------
                 DPL("Proximity-Check: Very close: Config Goodwatch");
                 display.init(DEBUG_DISPLAY);
-                Load_PaintWeather(display);
+//                Load_PaintWeather(display);
                 delay(10000);
                 display.clearScreen();
                 PaintWatch(display, false, false);

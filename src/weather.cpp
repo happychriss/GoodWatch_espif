@@ -30,8 +30,17 @@
 bool b_wait_weather_data = true;
 
 
+std::vector<struct_forecast_schedule> schedule = {
+        {6,  {8,  18}},
+        {8,  {10, 19}},
+        {10, {13, 19}},
+        {12, {14, 19}},
+        {15, {18, 8}},
+        {20, {8,  18}},
+        {23, {8,  18}},
+};
 
-uint32_t calculateWeatherCRC(struct_Weather &weather) {
+uint32_t calculateWeatherCRC(struct_AlarmWeather &weather) {
 
     const auto *data = reinterpret_cast<const unsigned char *>(&weather);
     size_t length = sizeof(weather) - sizeof(weather.crc);
@@ -682,6 +691,39 @@ void DWD_WeatherTask(void *pvParameters) {
 
 }
 
+// Getting the weather forecast that is relevant for the alarm
+void GetAlarmWeather(const DateTime alarm_time,
+                     struct_Weather *ptr_Weather,
+                     struct_AlarmWeather *ptr_AlarmWeather) {
+
+    std::vector<int> hours_for_index;
+    std::tm  alarm_tm =datetime_to_tm(alarm_time);
+
+    returnHourIndexFromForecast(
+            alarm_tm,
+            schedule,
+            &(ptr_Weather->HourlyWeather),
+            &hours_for_index);
+
+    ptr_AlarmWeather->publish_time = ptr_Weather->publish_time;
+    ptr_AlarmWeather->alarm_time = alarm_tm;
+    ptr_AlarmWeather->HourlyWeather[0] = ptr_Weather->HourlyWeather[hours_for_index[0]];
+    ptr_AlarmWeather->HourlyWeather[1] = ptr_Weather->HourlyWeather[hours_for_index[1]];
+
+    // print all content from AlarmWeather
+    DPL("Printing AlarmWeather");
+    DPL("Publish Time: ");
+    PrintSerialTime(ptr_AlarmWeather->publish_time);
+    DPL("Alarm Time: ");
+    PrintSerialTime(ptr_AlarmWeather->alarm_time);
+    DPL("Hourly Weather: ");
+    printHourlyWeather(ptr_AlarmWeather->HourlyWeather[0]);
+    printHourlyWeather(ptr_AlarmWeather->HourlyWeather[1]);
+
+
+}
+
+// Getting the general Weatherforecast
 void GetWeather(struct_Weather *ptrWeather) {
     DPL("Getting weather data by starting task...");
 
@@ -706,7 +748,7 @@ void GetWeather(struct_Weather *ptrWeather) {
 }
 
 bool returnHourIndexFromForecast(
-        const tm check_time,
+        tm check_time,
         const std::vector<struct_forecast_schedule> &schedule,
         const std::array<struct_HourlyWeather, HOURS_FORECAST> *ptr_hourly_weather,
         std::vector<int> *hours_index) {
@@ -734,7 +776,7 @@ bool returnHourIndexFromForecast(
 
     for (const auto &hour_forecast: forecasts_ptr->forecast_hours) {
 
-        int check_yday = tm_check_time.tm_yday;
+        int check_yday =check_time.tm_yday;
         if (hour_forecast < forecasts_ptr->check_hour) {
             check_yday++;
             DPF(" <- Adding 1 to yday\n");

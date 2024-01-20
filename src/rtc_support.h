@@ -32,6 +32,7 @@ void rtsSetEspTime(DateTime dt);
 
 void PrintSerialTime(tm tm);
 
+tm datetime_to_tm(const DateTime& dt);
 
 DateTime now_datetime();
 

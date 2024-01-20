@@ -108,21 +108,27 @@ void PrepareWeather() {
 
             /* START - Execute Prepare actions ***************************************************************************/
 
-            if (!CheckWeatherInSPIFF()) {
+            auto* ptr_AlarmWeather = new struct_AlarmWeather();
+            memset(ptr_AlarmWeather, 0, sizeof(struct_AlarmWeather));
+            String str_weather;
+            bool valid=GetValidForecast(rtc_alarm, ptr_AlarmWeather,str_weather);
+
+            DPF("Check Weather Result: %s\n",str_weather.c_str());
+
+            if (!valid) {
 
                 SetupWifi();
                 SmartHomeTrigger();
 
-                DPL("!!! No Weather in SPIFF - get fresh weather data");
-                auto *ptr_Weather = (struct_Weather *) ps_malloc(sizeof(struct_Weather));
-                if (ptr_Weather == nullptr) {
-                    DPL("Error allocating memory for Weather");
-                }
+                auto* ptr_Weather = new struct_Weather();
+                memset(ptr_Weather, 0, sizeof(struct_Weather));
 
                 DPL("!!! Prepare Wakeup activities");
                 GetWeather(ptr_Weather);
-                ptr_Weather->crc = calculateWeatherCRC(*ptr_Weather);
-                StoreWeatherToSpiffs(ptr_Weather);
+                GetAlarmWeather(rtc_alarm,ptr_Weather,ptr_AlarmWeather);
+
+                ptr_AlarmWeather->crc = calculateWeatherCRC(*ptr_AlarmWeather);
+                StoreWeatherToSpiffs(ptr_AlarmWeather);
 
             } else {
                 DPL("!!! Prepare Wakeup activities - Weather data already in SPIFFS");
@@ -141,19 +147,15 @@ void PrepareWeather() {
 /* Wakeup Action  ***************************************************************************/
 void WakeUpRoutine(GxEPD2_GFX &d) {
 
+    auto *ptr_AlarmWeather = new struct_AlarmWeather();
+    memset(ptr_AlarmWeather, 0, sizeof(struct_AlarmWeather));
+
     // Check if Weather Forecast exists and display message on screen
-    String str_weather = "Kein Wetter!";
-    bool b_weather = CheckWeatherInSPIFF();
-    if (b_weather) {
-        if (true) {
-//        if (validateWeatherCRC()) {
-            str_weather = "*Wetter*";
-        } else {
-            str_weather = "*CRC Error*";
-            DeleteWeatherFromSPIFF();
-            b_weather=false;
-        }
-    }
+    String str_weather ;
+    DateTime now=now_datetime();
+
+    bool b_weather = GetValidForecast(now, ptr_AlarmWeather,str_weather);
+    DeleteWeatherFromSPIFF();
 
     display.setTextColor(GxEPD_BLACK);
     display.setFont(&FreeSans12pt7b);
@@ -219,7 +221,8 @@ void WakeUpRoutine(GxEPD2_GFX &d) {
 
     if (b_weather) {
         DP("Showing Weather - give some time to look and wait for PIR Wave to finish");
-        PaintWeather(d);
+        DrawWeatherToDisplay(d, ptr_AlarmWeather);
+
 
         while (digitalRead(PIR_INT) == true) {
             delay(100);
@@ -235,7 +238,7 @@ void WakeUpRoutine(GxEPD2_GFX &d) {
             wait_count--;
         }
         DP("\n");
-        DeleteWeatherFromSPIFF();
+
     }
 
     DPL("DONE");

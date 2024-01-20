@@ -79,6 +79,22 @@ DateTime tm_2_datetime(tm timeinfo) {
 // tm is a struct with 9 members
 // DateTime is a struct with 6 members - adjusted to print with 1900 correction
 
+
+tm datetime_to_tm(const DateTime& dt) {
+    tm timeinfo = {};
+    timeinfo.tm_year = dt.year() - 1900; // Years since 1900
+    timeinfo.tm_mon = dt.month() - 1;    // Months since January [0-11]
+    timeinfo.tm_mday = dt.day();         // Day of the month [1-31]
+    timeinfo.tm_hour = dt.hour();        // Hours since midnight [0-23]
+    timeinfo.tm_min = dt.minute();       // Minutes after the hour [0-59]
+    timeinfo.tm_sec = dt.second();       // Seconds after the minute [0-60]
+
+    // Call mktime to fill in the tm_yday field
+    mktime(&timeinfo);
+
+    return timeinfo;
+}
+
 tm now_tm() {
     struct tm timeinfo = {};
     time_t now;

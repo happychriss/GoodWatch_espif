@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "pugixml.hpp"
+#include "my_RTClib.h"
 #include <iostream>
 #include <string>
 #include <iomanip>
@@ -39,6 +40,10 @@ struct struct_forecast_schedule {
 
 
 #define NO_ICON_FOUND 999
+
+
+
+
 const char * const weather_names[] = {
         "chanceflurries.bmp",   // index 0  // Flurries, ID: 0
         "chancerain.bmp",       // index 1  // Chance Rain, ID: 61
@@ -216,17 +221,28 @@ struct struct_Weather {
     uint32_t crc; // CRC field
 };
 
+struct struct_AlarmWeather {
+    tm publish_time;
+    tm alarm_time;
+    std::array<struct_HourlyWeather, 2> HourlyWeather;
+    uint32_t dummy; // CRC field
+    uint32_t crc; // CRC field
+};
 
 
 // extern struct_HourlyWeather HourlyWeather[HOURS_FORECAST];
 void GetWeather(struct_Weather *ptrWeather);
-uint32_t calculateWeatherCRC(struct_Weather &weather);
+void GetAlarmWeather(const DateTime alarm_time,
+                     struct_Weather *ptr_Weather,
+                     struct_AlarmWeather *ptr_AlarmWeather);
+uint32_t calculateWeatherCRC(struct_AlarmWeather &weather);
 void DWD_Weather(struct_Weather*  ptr_myWF);
 void coreTask( void * pvParameters );
 int determineWeatherIcon(const struct_HourlyWeather &hw);
 void determineWeatherString(const struct_HourlyWeather &weather, String &line_1, String &line_2);
 void printHourlyWeather(struct_HourlyWeather hw);
 bool returnHourIndexFromForecast(
+        tm check_time,
         const std::vector<struct_forecast_schedule>& schedule,
         const std::array<struct_HourlyWeather,HOURS_FORECAST> * ptr_hourly_weather,
         std::vector <int> *hours_index);

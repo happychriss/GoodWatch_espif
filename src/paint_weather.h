@@ -9,10 +9,10 @@
 #include <GxEPD2_BW.h>
 #include <GxEPD2_GFX.h>
 void Load_PaintWeather(GxEPD2_GFX &d);
-void StoreWeatherToSpiffs(struct_Weather *pWeather);
-void ReadWeatherFromSPIFF(struct_Weather *pWeather);
-void DrawWeatherToDisplay(GxEPD2_GFX &d, struct_Weather *Weather, std::vector<int> hours_for_index);
+void StoreWeatherToSpiffs(struct_AlarmWeather *pWeather);
+void ReadWeatherFromSPIFF(struct_AlarmWeather *pWeather);
+void DrawWeatherToDisplay(GxEPD2_GFX &d, struct_AlarmWeather *Weather);
 void DeleteWeatherFromSPIFF();
-bool CheckWeatherInSPIFF();
-void PaintWeather(GxEPD2_GFX &d);
+bool GetValidForecast(DateTime set_alarm_time, struct_AlarmWeather *pWeather, String &resultMessage);
+
 #endif //GOODWATCH_ESPIF_WEATHER_PAINT_WEATHER_H
