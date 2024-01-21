@@ -11,8 +11,9 @@
 #include "fonts/FreeSansNumOnly70.h"
 #include "rtc_support.h"
 #include "paint_alarm.h"
+#include "display_support.h"
 #include <Fonts/FreeSans24pt7b.h>
-#include <Fonts/FreeSans18pt7b.h>
+#include <fonts/FreeSans18_Celsius_pt7b.h>
 #include <Fonts/FreeSans12pt7b.h>
 #include <my_RTClib.h>
 #include <paint_support.h>
@@ -327,7 +328,7 @@ int XSerialKeyWait() {// Wait for Key
 }
 
 
-void PaintQuickTime(GxEPD2_GFX &display, boolean b_clear) {
+boolean PaintQuickTime(GxEPD2_GFX &display, boolean b_clear) {
 
     //Paint Time
     int16_t tbx, tby;
@@ -350,7 +351,7 @@ void PaintQuickTime(GxEPD2_GFX &display, boolean b_clear) {
     display.setPartialWindow(tx, ty, tbw, tbh + 8);
 
     // determine position of actual time string
-    display.setFont(&FreeSans18pt7b);
+    display.setFont(&FreeSans18pt7b_Celsius);
     display.getTextBounds(str_time_now, tx, ty, &sbx, &sby, &sbw, &sbh);
 
     // center the bounding box by transposition of the origin - inside the partial window
@@ -368,7 +369,13 @@ void PaintQuickTime(GxEPD2_GFX &display, boolean b_clear) {
         display.print(str_time_now);
     } while (display.nextPage());
 
-    delay(2000);
+    delay(1000);
+    DPL("Check Proximity Sensor in QuickTime");
+    auto avg_proximity_data = ReadSensorDistance();
+    if (avg_proximity_data < 60) {
+        return false;
+    }
+    delay(800);
 
     String str_hour = String(now.hour());
     DP("**** Print Hour:");
@@ -391,6 +398,7 @@ void PaintQuickTime(GxEPD2_GFX &display, boolean b_clear) {
 
     } while (display.nextPage());
 
+    return true;
 }
 
 String GetAlarmInfo(GxEPD2_GFX &display, DateTime cur_time, bool b_minutes) {

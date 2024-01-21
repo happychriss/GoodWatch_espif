@@ -10,7 +10,7 @@ extern bool b_pir_wave;
 extern bool b_audio_finished;
 extern Audio audio;
 
-void WakeUpRoutine(GxEPD2_GFX &d);
-void PrepareWeather();
+void ExecuteWakeUpRoutine(GxEPD2_GFX &d);
+void PrepareWakupRoutine();
 void SmartHomeTrigger();
 #endif //GOODWATCH_AUDIO_SUPPORT_H

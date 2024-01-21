@@ -26,7 +26,8 @@
 #include "Fonts/FreeSans12pt7b.h"
 
 // custom
-#include <display_support.hpp>
+
+
 #include <wakeup_action.hpp>
 #include <rtc_support.h>
 
@@ -36,6 +37,7 @@
 #include <esp_wifi.h>
 #include <inference_sound.h>
 #include "rtc_support.h"
+#include "display_support.h"
 
 
 // #define DATA_ACQUISITION -> check in file support.h
@@ -125,6 +127,22 @@ void battery_sent() {
     http.end();
 }
 
+void PlayBeepSound() {
+
+    if (!SPIFFS.begin(true)) {
+        DPL("An Error has occurred while mounting SPIFFS");
+    }
+    audio.setVolume(21); // 0...21
+    audio.forceMono(true);
+    audio.connecttoFS(SPIFFS, "/button.mp3");
+
+    b_audio_finished = false;
+    while ((!b_audio_end_of_mp3) && (!b_audio_finished)) {
+        audio.loop();
+    }
+    b_audio_finished = true;
+
+}
 
 void setup() {
 
@@ -156,7 +174,7 @@ void setup() {
     if (false) {
         //        pinMode(GPIO_NUM_34, INPUT_PULLUP);
         delay(2500);
-        WakeUpRoutine(display);
+        ExecuteWakeUpRoutine(display);
     }
 
 
@@ -185,7 +203,7 @@ void loop() {
     DP("Battery V: ");
     DPL(BatteryVoltage);
 
-// Audio Initi
+// Audio Init
     DP("Audio Init..");
     audio.setPinout(I2S_NUM_1_BCLK, I2S_NUM_1_LRC, I2S_NUM_1_DOUT);
     audio.setVolume(0); // 0...21
@@ -252,7 +270,8 @@ void loop() {
             display.init(DEBUG_DISPLAY, false);
             PaintWatch(display, true, false);
 
-            PrepareWeather();
+            // Triggers x min before an alarm (e.g.30) and exectues pre-wakeup actions - SmartHome and Weather
+            PrepareWakupRoutine();
 
             /* ***************************************************************************/
 
@@ -285,7 +304,7 @@ void loop() {
                 /* WAKEUP Routine  ***************************************************************************/
                 /* Play Music */
                 /* Show Weather */
-                WakeUpRoutine(display);
+                ExecuteWakeUpRoutine(display);
 
                 display.init(DEBUG_DISPLAY, true);
                 PaintWatch(display, false, false);
@@ -310,6 +329,9 @@ void loop() {
     if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0) {
         DPL("!!!! PIR Sensor Wakeup !!!! ");
 
+#undef TEST
+
+#ifdef TEST
 
         SetupWifi();
         auto *ptr_AlarmWeather = new struct_AlarmWeather();
@@ -323,7 +345,7 @@ void loop() {
         String str_weather;
         DateTime rtc_alarm = rtc_watch.now();
 
-        bool valid = GetValidForecast(rtc_alarm, ptr_AlarmWeather, str_weather);
+        bool valid = GetValidForecastFromSpiff(rtc_alarm, ptr_AlarmWeather, str_weather);
 
         DPF("Check Weather Result: %s\n", str_weather.c_str());
 
@@ -345,19 +367,19 @@ void loop() {
 
         memset(ptr_AlarmWeather, 0, sizeof(struct_AlarmWeather));
 
-        valid = GetValidForecast(rtc_alarm, ptr_AlarmWeather, str_weather);
+        valid = GetValidForecastFromSpiff(rtc_alarm, ptr_AlarmWeather, str_weather);
         if (valid) {
             display.init(DEBUG_DISPLAY, true);
             display.clearScreen();
             DrawWeatherToDisplay(display, ptr_AlarmWeather);
-            DeleteWeatherFromSPIFF();
+//            DeleteWeatherFromSPIFF();
         }
 
 
         // free memory
         delete ptr_AlarmWeather;
 
-
+#endif
         int light_level = GetMaxLightLevel();
 
         // ***********************************************************************************************/
@@ -398,9 +420,21 @@ void loop() {
             // ***********************************************************************************************/
 
                 DPL("Proximity-Check: A bit away: Program Alarm");
-                display.init(DEBUG_DISPLAY, true);
-                ProgramAlarm(display);
-                PaintWatch(display, false, false);
+                if (!SPIFFS.begin(true)) {
+                   DPL("An Error has occurred while mounting SPIFFS");
+                }
+
+                PlayBeepSound();
+                delay(700);
+
+                avg_proximity_data = ReadSensorDistance();
+
+                if (avg_proximity_data < 30) {
+                    display.init(DEBUG_DISPLAY, true);
+                    ProgramAlarm(display);
+                    PaintWatch(display, false, false);
+                }
+
             } else { // hand away, but not dark
 
 /*          // **********************************************************************************************
@@ -411,8 +445,13 @@ void loop() {
 
                 // no weather forecast, just paint quicktime
                 display.init(DEBUG_DISPLAY, false);
-                PaintQuickTime(display, false);
+                 if (!PaintQuickTime(display, false)) {
+                    PlayBeepSound();
+                    display.init(DEBUG_DISPLAY, true);
+                    ProgramAlarm(display);
+                    PaintWatch(display, false, false);
 
+                }
 
 //            battery_sent();
             } // end of distrance checking loop for pir sensor (light not on)

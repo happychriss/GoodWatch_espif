@@ -11,6 +11,8 @@
 #include "paint_alarm.h"
 #include "wifi_support.h"
 #include "base64.h"
+#include "display_support.h"
+#include "GxEPD2_display_selection_new_style.h"
 
 
 extern RTC_DS3231 rtc_watch;
@@ -53,6 +55,9 @@ void fade_out(void *parameter) {
 void SmartHomeTrigger() {
     DPL("SmartHomeTrigger");
     // Make the POST request
+
+    SetupWifi();
+
     if (WiFi.status() == WL_CONNECTED) {
         auto *client = new WiFiClientSecure;
         client->setInsecure();
@@ -88,7 +93,7 @@ void SmartHomeTrigger() {
 
 #define PREPARE_WAKEUP 30
 
-void PrepareWeather() {
+void PrepareWakupRoutine() {
 
     DateTime rtc_alarm = {};
     DateTime now = now_datetime();
@@ -111,13 +116,13 @@ void PrepareWeather() {
             auto* ptr_AlarmWeather = new struct_AlarmWeather();
             memset(ptr_AlarmWeather, 0, sizeof(struct_AlarmWeather));
             String str_weather;
-            bool valid=GetValidForecast(rtc_alarm, ptr_AlarmWeather,str_weather);
+            bool valid= GetValidForecastFromSpiff(rtc_alarm, ptr_AlarmWeather, str_weather);
 
             DPF("Check Weather Result: %s\n",str_weather.c_str());
 
             if (!valid) {
 
-                SetupWifi();
+
                 SmartHomeTrigger();
 
                 auto* ptr_Weather = new struct_Weather();
@@ -145,7 +150,7 @@ void PrepareWeather() {
 }
 
 /* Wakeup Action  ***************************************************************************/
-void WakeUpRoutine(GxEPD2_GFX &d) {
+void ExecuteWakeUpRoutine(GxEPD2_GFX &d) {
 
     auto *ptr_AlarmWeather = new struct_AlarmWeather();
     memset(ptr_AlarmWeather, 0, sizeof(struct_AlarmWeather));
@@ -154,7 +159,7 @@ void WakeUpRoutine(GxEPD2_GFX &d) {
     String str_weather ;
     DateTime now=now_datetime();
 
-    bool b_weather = GetValidForecast(now, ptr_AlarmWeather,str_weather);
+    bool b_weather = GetValidForecastFromSpiff(now, ptr_AlarmWeather, str_weather);
     DeleteWeatherFromSPIFF();
 
     display.setTextColor(GxEPD_BLACK);
@@ -229,11 +234,11 @@ void WakeUpRoutine(GxEPD2_GFX &d) {
         }
         DPL("Wait for the next PIR Wave to return to normal display");
 
-        // Wait for PIR wave or max 5 seconds
+        // Wait for PIR wave or some  5 seconds
         b_pir_wave = false;
-        int wait_count = 250;
+        int wait_count = 30;
         while ((!b_pir_wave) && (wait_count > 0)) {
-            delay(100);
+            delay(1000);
             DP(".");
             wait_count--;
         }

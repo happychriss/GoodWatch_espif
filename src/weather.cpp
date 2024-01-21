@@ -711,15 +711,12 @@ void GetAlarmWeather(const DateTime alarm_time,
     ptr_AlarmWeather->HourlyWeather[1] = ptr_Weather->HourlyWeather[hours_for_index[1]];
 
     // print all content from AlarmWeather
-    DPL("Printing AlarmWeather");
-    DPL("Publish Time: ");
-    PrintSerialTime(ptr_AlarmWeather->publish_time);
-    DPL("Alarm Time: ");
-    PrintSerialTime(ptr_AlarmWeather->alarm_time);
+    DPL("**** Printing AlarmWeather ****");
+    DPF("Publish Time: %s\n",GetSerialTime(ptr_AlarmWeather->publish_time).c_str());
+    DPF("Alarm Time: %s\n",GetSerialTime(ptr_AlarmWeather->alarm_time).c_str());
     DPL("Hourly Weather: ");
     printHourlyWeather(ptr_AlarmWeather->HourlyWeather[0]);
     printHourlyWeather(ptr_AlarmWeather->HourlyWeather[1]);
-
 
 }
 

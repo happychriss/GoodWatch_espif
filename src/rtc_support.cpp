@@ -117,6 +117,9 @@ void PrintSerialTime(tm tm) {
     DP(DateTimeString(tm_2_datetime(tm)));
 }
 
+String GetSerialTime(tm tm) {
+    return DateTimeString(tm_2_datetime(tm));
+}
 
 void rtcInit() {
     // initializing the rtc

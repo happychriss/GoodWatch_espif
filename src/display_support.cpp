@@ -1,3 +1,6 @@
+#ifndef DISPLAY_SUPPORT_HPP
+#define DISPLAY_SUPPORT_HPP
+
 //
 // Created by development on 29.06.21.
 //
@@ -7,12 +10,13 @@
 
 #include <Arduino.h>
 #include <StreamString.h>
+#include <support.h>
 //
 #include <Arduino.h>
 // EDP
 #include <GxEPD2_BW.h>
 #include <GxEPD2_GFX.h>
-#include "GxEPD2_display_selection_new_style.h"
+
 
 /*
 #include <Fonts/FreeSerif24pt7b.h>
@@ -31,7 +35,7 @@
 #include <analogWrite.h>
 
 
-uint16_t ambient_light=0;
+
 extern int global_light_enabled_level;
 
 extern VL6180X distance_sensor;
@@ -76,17 +80,6 @@ const uint16_t pwmtable_16[256] PROGMEM =
 
 // EPD GX Config
 
-class BitmapDisplay {
-private:
-    GxEPD2_GFX &display;
-public:
-    BitmapDisplay(GxEPD2_GFX &_display) : display(_display) {};
-
-    void drawBitmaps();
-
-private:
-    void drawBitmaps400x300();
-};
 
 void DistanceSensorSetup() {
 
@@ -161,7 +154,7 @@ void dim_light_up_down_task(void *parameter) {
     const int ledChannel = 0;
     const int resolution = 8;
 
-
+    uint16_t ambient_light=0;
 
     // enable light
     if (direction_up) {
@@ -272,3 +265,4 @@ void helloValue(GxEPD2_GFX &display, double v, int digits) {
     } while (display.nextPage());
 
 }
+#endif //DISPLAY_SUPPORT_HPP

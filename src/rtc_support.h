@@ -33,7 +33,7 @@ void rtsSetEspTime(DateTime dt);
 void PrintSerialTime(tm tm);
 
 tm datetime_to_tm(const DateTime& dt);
-
+String GetSerialTime(tm tm);
 DateTime now_datetime();
 
 String rtcFormatCurrentTime(char *str_format);

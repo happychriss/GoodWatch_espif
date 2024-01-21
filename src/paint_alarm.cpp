@@ -339,9 +339,12 @@ void ProgramAlarm(GxEPD2_GFX &d) {
                     value_idx = GetVoiceCommand();
                     if (value_idx == ANSWER_NO || value_idx== ANSWER_TIMEOUT) {
                         b_menu_loop = false;
+                        break;
                     }
                 }
                 // value_idx is a selected alarm now
+
+                if (!b_menu_loop) break;
 
                 selected_alarm = value_idx - 1;
                 DPF("************+ Change Alarm Time for alarm:%i\n", selected_alarm);
@@ -567,7 +570,7 @@ void ConfigGoodWatch(GxEPD2_GFX &d) {
 
         digitalWrite(DISPLAY_AND_SOUND_POWER, HIGH);
 
-        WakeUpRoutine(d);
+        ExecuteWakeUpRoutine(d);
 
         digitalWrite(DISPLAY_AND_SOUND_POWER, LOW);
         while (digitalRead(PIR_INT) == true) {

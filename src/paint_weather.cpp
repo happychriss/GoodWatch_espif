@@ -17,7 +17,7 @@
 #include "rtc_support.h"
 #include "paint_alarm.h"
 #include <Fonts/FreeSans24pt7b.h>
-#include <Fonts/FreeSans18pt7b.h>
+
 #include <Fonts/FreeSans12pt7b.h>
 #include <my_RTClib.h>
 #include <paint_support.h>
@@ -25,6 +25,7 @@
 #include "time.h"
 #include "SPIFFS.h"
 #include "fonts/FreeSans9pt7b.h"
+#include <fonts/FreeSans18_Celsius_pt7b.h>
 
 
 uint16_t read16(fs::File &f) {
@@ -115,32 +116,36 @@ void my_drawBMP(GxEPD2_GFX &display, const char *path, int16_t x_offset, int16_t
 
 #define COLUMN_0_Time 5
 #define COLUMN_1_ICON 70
-#define COLUMN_2_FORECAST (COLUMN_1_ICON+ICON_WIDTH+25)
+#define COLUMN_2_FORECAST (COLUMN_1_ICON+ICON_WIDTH+30)
 
 #define X_OFF 10
 #define Y_OFF 20
 
-
+// Printe one line of weaterh with icon, temp, rain..... on the display
 void printOnForecast(GxEPD2_GFX &d, struct_HourlyWeather fc, int y_offset) {
+    char timeStr[50], str_temp[10], str_wind[10], str_rain[10];
 
-    // Forcast Time
-    char timeStr[50];
     strftime(timeStr, sizeof(timeStr), "%H:%M", &fc.time);
+    sprintf(str_temp, "%d", (int) round(fc.temperature));
+    sprintf(str_wind, "%d", (int) round(fc.wind));
+    sprintf(str_rain, "%.1f", round(fc.rain * 10) / 10);
 
     d.setFont(&FreeSans12pt7b);
     d.setCursor(COLUMN_0_Time, WF_HEIGHT * 3 + y_offset);
     d.print(timeStr);
 
-    // Forecast
-    d.setCursor(COLUMN_2_FORECAST, WF_HEIGHT * 3 + y_offset);
-    d.print((String(fc.temperature) + " °C   " + String(fc.rain) + " mm").c_str());
+    d.setFont(&FreeSans18pt7b_Celsius);
+    d.setCursor(COLUMN_2_FORECAST, WF_HEIGHT * 2 + y_offset+9);
+    d.print((String(str_temp) + "°   "+String(str_wind)+" Bft").c_str());
 
-    d.setFont(&FreeSans9pt7b);
+    d.setCursor(COLUMN_2_FORECAST, WF_HEIGHT * 4 + y_offset);
+    d.print((String(str_rain) + " mm").c_str());
+
     if (fc.forecast_id > 3) {
+        d.setFont(&FreeSans9pt7b);
         d.setCursor(COLUMN_1_ICON + X_OFF, WF_HEIGHT * 5 + y_offset);
         d.print(getWeatherString(fc.forecast_id).c_str());
     }
-
 }
 
 
@@ -213,8 +218,9 @@ void DeleteWeatherFromSPIFF() {
 // add string to return a result message
 
 
-bool GetValidForecast(DateTime set_alarm_time, struct_AlarmWeather *pWeather, String &resultMessage) {
+bool GetValidForecastFromSpiff(DateTime set_alarm_time, struct_AlarmWeather *pWeather, String &resultMessage) {
     DPL("Checking and Loading valid forecast from Spiffs");
+    resultMessage = "";
 
     if (!SPIFFS.begin(true)) {
         resultMessage = "MountError";
@@ -234,12 +240,12 @@ bool GetValidForecast(DateTime set_alarm_time, struct_AlarmWeather *pWeather, St
     }
 
     size_t length = file.read((uint8_t *) pWeather, sizeof(struct_AlarmWeather));
-    resultMessage = resultMessage + "Read " + String(length) + " bytes from SPIFFS\n";
+    DPF("Read %d bytes from SPIFFS\n", length);
     file.close();
 
     DPF("Validating CRC Code: %lu\n ",pWeather->crc);
     if (pWeather->crc != calculateWeatherCRC(*pWeather)) {
-        resultMessage += "CRC invalid\n";
+        resultMessage = "CRC invalid\n";
         return false;
     }
 
@@ -248,40 +254,12 @@ bool GetValidForecast(DateTime set_alarm_time, struct_AlarmWeather *pWeather, St
     std::tm set_alarm_tm = datetime_to_tm(set_alarm_time);
     if ((pWeather->alarm_time.tm_yday != set_alarm_tm.tm_yday) ||
         (pWeather->alarm_time.tm_hour != set_alarm_tm.tm_hour)) {
-        resultMessage += "Alarm time not valid\n";
+        resultMessage = "Alarm time invalid\n";
         return false;
     }
 
-    resultMessage += "Wetter\n";
+    resultMessage = "*Wetter*\n";
     return true;
-}
-
-
-// Read Weather fom Spiffs
-void ReadWeatherFromSPIFF(struct_AlarmWeather *pWeather) {
-
-    DPL("Get Weather from Spiffs");
-
-    if (!SPIFFS.begin(true)) {
-        DPL("An Error has occurred while mounting SPIFFS");
-        return;
-    }
-
-    File file = SPIFFS.open("/weather.bin", FILE_READ);
-
-    if (!file) {
-        DPL("Failed to open file for reading");
-        return;
-    }
-
-    size_t length = file.read((uint8_t *) pWeather, sizeof(struct_Weather));
-    DPF("Read %d bytes from SPIFFS\n", length);
-
-    file.close();
-
-    DPF("Read Weather from Spiffs with CRC: %lu\n", pWeather->crc);
-
-    DPL("Done");
 }
 
 
@@ -302,7 +280,7 @@ void StoreWeatherToSpiffs(struct_AlarmWeather *pWeather) {
         return;
     }
 
-    size_t length = file.write((uint8_t *) pWeather, sizeof(struct_Weather));
+    size_t length = file.write((uint8_t *) pWeather, sizeof(struct_AlarmWeather));
     DPF("Wrote %d bytes to SPIFFS\n", length);
 
     file.close();
@@ -310,31 +288,4 @@ void StoreWeatherToSpiffs(struct_AlarmWeather *pWeather) {
     DPL("Done");
 }
 
-//*void Load_PaintWeather(GxEPD2_GFX &d) {
-//
-//    DPL("Load_Paint Weather");
-//
-//    auto *ptr_Weather = (struct_Weather *) ps_malloc(sizeof(struct_Weather));
-//    if (ptr_Weather == nullptr) {
-//        DPL("Error allocating memory for Weather");
-//    }
-//
-//    DPF("Free heap: %d/%d %d max block\n", ESP.getFreeHeap(), ESP.getHeapSize(), ESP.getMaxAllocHeap());
-//    DPF("Free PSRAM: %d/%d %d max block\n", ESP.getFreePsram(), ESP.getPsramSize(), ESP.getMaxAllocPsram());
-//
-//
-//    GetWeather(ptr_Weather);
-//
-//
-//    DPL("Build index");
-//    std::vector<int> hours_for_index;
-//    if (returnHourIndexFromForecast(schedule, &(ptr_Weather->HourlyWeather), &hours_for_index)) {
-//        DrawWeatherToDisplay(d, ptr_Weather, hours_for_index);
-//    } else {
-//        DPL("Paint weather failed - didnt find an index");
-//    }
-//
-//    free(ptr_Weather);
-//    DPL("Done");
-//}*/
 
