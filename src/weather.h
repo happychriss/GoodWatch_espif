@@ -120,7 +120,7 @@ struct WeatherIDMap {
 
 
 
-const WeatherIDMap weather_id_maps[] = {
+const WeatherIDMap weather_id_maps_dyn[] = {
         { 0, NO_ICON_FOUND }, // unknown
         { 61, 1 }, // chance rain
         { 56, 2 }, // chance sleet
@@ -155,6 +155,37 @@ const WeatherIDMap weather_id_maps[] = {
         { 0, 19 }  // unknown
 };
 
+const WeatherIDMap weather_id_maps[] = {
+        {95, 18}, // leichtes oder mäßiges Gewitter mit Regen oder Schnee
+        {57, 15}, // mäßiger oder starker gefrierender Sprühregen
+        {56, 15}, // leichter gefrierender Sprühregen
+        {67, 15}, // mäßiger bis starker gefrierender Regen
+        {66, 15}, // leichter gefrierender Regen
+        {86, 16}, // mäßiger bis starker Schneeschauer
+        {85, 3},  // leichter Schneeschauer
+        {84, 15}, // mäßiger oder starker Schneeregenschauer
+        {83, 2},  // leichter Schneeregenschauer
+        {82, 14}, // äußerst heftiger Regenschauer
+        {81, 14}, // mäßiger oder starker Regenschauer
+        {80, 1},  // leichter Regenschauer
+        {75, 16}, // durchgehend starker Schneefall
+        {73, 16}, // durchgehend mäßiger Schneefall
+        {71, 3},  // durchgehend leichter Schneefall
+        {69, 15}, // mäßger oder starker Schneeregen
+        {68, 2},  // leichter Schneeregen
+        {55, 14}, // durchgehend starker Sprühregen
+        {53, 14}, // durchgehend mäßiger Sprühregen
+        {51, 1},  // durchgehend leichter Sprühregen
+        {65, 14}, // durchgehend starker Regen
+        {63, 14}, // durchgehend mäßiger Regen
+        {61, 1},  // durchgehend leichter Regen
+        {49, 8},  // Nebel mit Reifansatz, Himmel nicht erkennbar, unverändert
+        {45, 8},  // Nebel, Himmel nicht erkennbar
+        {03, 10}, // Bewölkung zunehmend
+        {02, 12}, // Bewölkung unverändert
+        {01, 13}, // Bewölkung abnehmend
+        {00, 17}  // keine Bewölkungsentwicklung
+};
 
 
 

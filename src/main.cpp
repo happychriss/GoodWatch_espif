@@ -469,7 +469,6 @@ void loop() {
     // DEEP SLEEP ***********************************************************************************
     // ***********************************************************************************************/
 
-
     DPF("Prepare deep sleep with global_light_enabled_level:%i\n", global_light_enabled_level);
 
     int wait_count = 0;
@@ -479,7 +478,6 @@ void loop() {
     } else {
         DPL("Light is off - no dimming");
     }
-
 
     while (global_light_enabled_level > 0 or !b_audio_finished) {
         DP(".");

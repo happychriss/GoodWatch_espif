@@ -204,17 +204,18 @@ void dim_light_up_down_task(void *parameter) {
 
 
 void dim_light_up_down_esp32(boolean direction_up) {
+    boolean* direction_up_copy = (boolean*) malloc(sizeof(boolean));
+    *direction_up_copy = direction_up;
 
     xTaskCreate(
             dim_light_up_down_task,    // Function that should be called
             "dim_light_up_down_task",  // Name of the task (for debugging)
             10000,            // Stack size (bytes)
-            (void *) &direction_up,            // Parameter to pass
+            (void *) direction_up_copy,            // Parameter to pass
             0,               // Task priority
             NULL             // Task handle
     );
 }
-
 int GetMaxLightLevel() {
     DP("GetMaxLightLevel");
     global_light_enabled_level = -1;

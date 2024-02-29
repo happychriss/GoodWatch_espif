@@ -460,9 +460,14 @@ int determineWeatherIcon(const struct_HourlyWeather &hw) {
     if (fc_icon != NO_ICON_FOUND) {
         DPF("Found Icon from DWD:  %d\n", fc_icon);
         return fc_icon;
+    } else {
+        DPL("No Icon found from DWD");
+        return 19; // unkown
     }
 
-    DPL("No Icon found from DWD - checking alternative icons");
+
+
+
 
     if (hw.rain == 0) {
 
