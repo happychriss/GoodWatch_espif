@@ -108,8 +108,14 @@ void PrepareWakupRoutine() {
             diff.minutes());
 
         if (
-                (diff.minutes() >= 0) && (diff.minutes() < PREPARE_WAKEUP) &&
+                (diff.minutes() >= 0) && (diff.minutes() < WAKUEP_INTERVAL) &&
                 (diff.hours() == 0) && (diff.days() == 0)) {
+
+
+            // Trigger SmartHome
+            DPL("!!! Prepare Wakeup activities - SmartHome Trigger");
+
+            SmartHomeTrigger();
 
             /* START - Execute Prepare actions ***************************************************************************/
 
@@ -121,9 +127,6 @@ void PrepareWakupRoutine() {
             DPF("Check Weather Result: %s\n",str_weather.c_str());
 
             if (!valid) {
-
-
-                SmartHomeTrigger();
 
                 auto* ptr_Weather = new struct_Weather();
                 memset(ptr_Weather, 0, sizeof(struct_Weather));
@@ -225,7 +228,7 @@ void ExecuteWakeUpRoutine(GxEPD2_GFX &d) {
     }
 
     if (b_weather) {
-        DP("Showing Weather - give some time to look and wait for PIR Wave to finish");
+        DP("Showing Weather - give some time to look and wait for PIR Wave to finish!");
         DrawWeatherToDisplay(d, ptr_AlarmWeather);
 
 

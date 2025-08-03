@@ -1,8 +1,2 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module version="4">
-  <component name="FacetManager">
-    <facet type="Python" name="Python facet">
-      <configuration sdkName="Python 3.10 (GoodWatch_espif_weather)" />
-    </facet>
-  </component>
-</module>
+<module classpath="External" external.linked.project.id="GoodWatch_espif_weather" external.linked.project.path="$MODULE_DIR$" external.root.project.path="$MODULE_DIR$" external.system.id="PlatformIO" type="CPP_MODULE" version="4" />

@@ -1,0 +1,14 @@
+//
+// Created by development on 7/31/25.
+//
+
+#ifndef BATTERY_CONSTANTS_H
+#define BATTERY_CONSTANTS_H
+#define TREND_WINDOW 20
+#define EMA_ALPHA 0.13
+#define LOW_VOLTAGE_THRESHOLD 3.3
+#define SHARP_DROP_THRESHOLD -0.015
+#define BATTERY_FULL_VOLTAGE 4.0
+#define BATTERY_EMPTY_VOLTAGE 3.3
+
+#endif //BATTERY_CONSTANTS_H

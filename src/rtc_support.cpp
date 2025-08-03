@@ -22,6 +22,30 @@ String DateTimeString(DateTime dt) {
 }
 
 
+bool isTimeChangeDate(const DateTime& date) {
+
+    // Europe time change is last sunday in March and last sunday in october
+
+    int year = date.year();
+    DateTime lastMarchSunday(year, 3, 31);
+    DateTime lastOctoberSunday(year, 10, 31);
+
+    // last day of the month for march and october
+    int weekdayMarch = lastMarchSunday.dayOfTheWeek();
+    int weekdayOctober = lastOctoberSunday.dayOfTheWeek();
+
+
+    // Calculate the last Sunday in March and October
+    lastMarchSunday = lastMarchSunday - TimeSpan(weekdayMarch);
+    lastOctoberSunday = lastOctoberSunday - TimeSpan(weekdayOctober);
+    DPF("Last Sunday in March: %s\n", DateTimeString(lastMarchSunday).c_str());
+    DPF("Last Sunday in October: %s\n", DateTimeString(lastOctoberSunday).c_str());
+
+    // Check that date provided is date for time change
+    return (date.month() == 3 && date.day() == lastMarchSunday.day() && date.year() == lastMarchSunday.year()) ||
+           (date.month() == 10 && date.day() == lastOctoberSunday.day() && date.year() == lastOctoberSunday.year());
+}
+
 void I2C_Scanner() {
     byte error, address; //variable for error and I2C address
     int nDevices;

@@ -53,6 +53,9 @@ void PL(GxEPD2_GFX &d, int line, int column, String text, bool b_partial, bool b
 
 }
 
+
+
+
 void HoursUntilAlarm(DateTime alarm, char * timeuntil) {
 //    TimeSpan diff_time = alarm - rtc_watch.now();
     TimeSpan diff_time = alarm - now_datetime();

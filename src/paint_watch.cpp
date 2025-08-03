@@ -15,6 +15,7 @@
 #include <Fonts/FreeSans24pt7b.h>
 #include <fonts/FreeSans18_Celsius_pt7b.h>
 #include <Fonts/FreeSans12pt7b.h>
+#include <Fonts/FreeSans9pt7b.h>
 #include <my_RTClib.h>
 #include <paint_support.h>
 
@@ -30,7 +31,8 @@
 #define SEP_OUT 150
 
 
-struct st_pwin {
+struct st_pwin
+{
     int x0;
     int y0;
     int x1;
@@ -40,8 +42,8 @@ struct st_pwin {
 
 extern RTC_DS3231 rtc_watch;
 
-void printText(GxEPD2_GFX &my_display, char *text, uint line) {
-
+void printText(GxEPD2_GFX& my_display, char* text, uint line)
+{
     //Serial.println("helloWorld");
     my_display.setRotation(1);
     my_display.setFont(&FreeSans24pt7b);
@@ -54,46 +56,52 @@ void printText(GxEPD2_GFX &my_display, char *text, uint line) {
     uint16_t y = ((my_display.height() - tbh) / 2) - tby;
     my_display.setFullWindow();
     my_display.firstPage();
-    do {
+    do
+    {
         my_display.fillScreen(GxEPD_WHITE);
         my_display.setCursor(x, y);
         my_display.print(text);
-    } while (my_display.nextPage());
+    }
+    while (my_display.nextPage());
     //Serial.println("helloWorld done");
 }
 
-void gfx_line(GxEPD2_GFX &my_display, st_pwin *partial_win, int x0, int y0, int x1, int y1) {
-
-    if (x0 > x1) {
+void gfx_line(GxEPD2_GFX& my_display, st_pwin* partial_win, int x0, int y0, int x1, int y1)
+{
+    if (x0 > x1)
+    {
         int x_tmp = x0;
         x0 = x1;
         x1 = x_tmp;
     }
 
-    if (y0 > y1) {
+    if (y0 > y1)
+    {
         int y_tmp = y0;
         y0 = y1;
         y1 = y_tmp;
     }
 
-    if (partial_win->simulate) {
+    if (partial_win->simulate)
+    {
         // keep the dimenstion of the updated windows
         if (x0 < partial_win->x0) partial_win->x0 = x0;
         if (y0 < partial_win->y0) partial_win->y0 = y0;
 
         if (x1 > partial_win->x1) partial_win->x1 = x1;
         if (y1 > partial_win->y1) partial_win->y1 = y1;
-
-    } else {
+    }
+    else
+    {
         my_display.drawFastHLine(x0, y0, x1 - x0, GxEPD_BLACK);
     }
     //    my_display.drawLine(x0,y0,x1,y1,GxEPD_BLACK);
-
 }
 
 
-void DrawArcCircle_Q1(GxEPD2_GFX &my_display, st_pwin *pwin, int x0, int y0, double start_angle, double end_angle, int ri, int ro) {
-
+void DrawArcCircle_Q1(GxEPD2_GFX& my_display, st_pwin* pwin, int x0, int y0, double start_angle, double end_angle,
+                      int ri, int ro)
+{
     start_angle = start_angle * (M_PI / 180);
     end_angle = end_angle * (M_PI / 180);
     double tan_start_angel = tan(start_angle);
@@ -102,16 +110,20 @@ void DrawArcCircle_Q1(GxEPD2_GFX &my_display, st_pwin *pwin, int x0, int y0, dou
 
     int ri2 = ri * ri;
     int ro2 = ro * ro;
-    for (int cy = -ro; cy <= 0; cy++) {
+    for (int cy = -ro; cy <= 0; cy++)
+    {
         int cx_i;
-        if (abs(ri) < abs(cy)) {
+        if (abs(ri) < abs(cy))
+        {
             cx_i = -1;
-        } else {
-            cx_i = (int) (sqrt(ri2 - cy * cy) + 0.5);
+        }
+        else
+        {
+            cx_i = (int)(sqrt(ri2 - cy * cy) + 0.5);
         }
 
 
-        int cx_o = (int) (sqrt(ro2 - cy * cy) + 0.5);
+        int cx_o = (int)(sqrt(ro2 - cy * cy) + 0.5);
         int cyy = cy + y0;
 
         int dx_1 = tan_start_angel * cy * -1;
@@ -125,7 +137,8 @@ void DrawArcCircle_Q1(GxEPD2_GFX &my_display, st_pwin *pwin, int x0, int y0, dou
         int x1d = x0 + cx_o;
 
 
-        if (cx_i <= cx_o) {
+        if (cx_i <= cx_o)
+        {
             gfx_line(my_display, pwin, x0d, cyy, x1d, cyy);
             /*       DP(cyy);
                    DP(":");
@@ -137,8 +150,9 @@ void DrawArcCircle_Q1(GxEPD2_GFX &my_display, st_pwin *pwin, int x0, int y0, dou
 }
 
 
-void DrawArcCircle_Q2(GxEPD2_GFX &my_display, st_pwin *pwin, int x0, int y0, double start_angle, double end_angle, int ri, int ro) {
-
+void DrawArcCircle_Q2(GxEPD2_GFX& my_display, st_pwin* pwin, int x0, int y0, double start_angle, double end_angle,
+                      int ri, int ro)
+{
     start_angle = (start_angle - 90) * (M_PI / 180);
     end_angle = (end_angle - 90) * (M_PI / 180);
     double tan_start_angel = tan(start_angle);
@@ -146,14 +160,18 @@ void DrawArcCircle_Q2(GxEPD2_GFX &my_display, st_pwin *pwin, int x0, int y0, dou
 
     int ri2 = ri * ri;
     int ro2 = ro * ro;
-    for (int cy = 0; cy <= ro; cy++) {
+    for (int cy = 0; cy <= ro; cy++)
+    {
         int cx_i;
-        if (abs(ri) < abs(cy)) {
+        if (abs(ri) < abs(cy))
+        {
             cx_i = -1;
-        } else {
-            cx_i = (int) (sqrt(ri2 - cy * cy) + 0.5);
         }
-        int cx_o = (int) (sqrt(ro2 - cy * cy) + 0.5);
+        else
+        {
+            cx_i = (int)(sqrt(ri2 - cy * cy) + 0.5);
+        }
+        int cx_o = (int)(sqrt(ro2 - cy * cy) + 0.5);
         int cyy = cy + y0;
 
 
@@ -163,15 +181,16 @@ void DrawArcCircle_Q2(GxEPD2_GFX &my_display, st_pwin *pwin, int x0, int y0, dou
         if (dx_1 < cx_o) { cx_o = dx_1; };
         if (dx_2 > cx_i) { cx_i = dx_2; };
 
-        if (cx_i <= cx_o) {
+        if (cx_i <= cx_o)
+        {
             gfx_line(my_display, pwin, x0 + cx_i, cyy, x0 + cx_o, cyy);
         }
-
     }
 }
 
-void DrawArcCircle_Q3(GxEPD2_GFX &my_display, st_pwin *pwin, int x0, int y0, double start_angle, double end_angle, int ri, int ro) {
-
+void DrawArcCircle_Q3(GxEPD2_GFX& my_display, st_pwin* pwin, int x0, int y0, double start_angle, double end_angle,
+                      int ri, int ro)
+{
     start_angle = (270 - start_angle) * (M_PI / 180);
     end_angle = (270 - end_angle) * (M_PI / 180);
     double tan_start_angel = tan(start_angle);
@@ -179,14 +198,18 @@ void DrawArcCircle_Q3(GxEPD2_GFX &my_display, st_pwin *pwin, int x0, int y0, dou
 
     int ri2 = ri * ri;
     int ro2 = ro * ro;
-    for (int cy = 0; cy <= ro; cy++) {
+    for (int cy = 0; cy <= ro; cy++)
+    {
         int cx_i;
-        if (abs(ri) < abs(cy)) {
+        if (abs(ri) < abs(cy))
+        {
             cx_i = -1;
-        } else {
-            cx_i = (int) (sqrt(ri2 - cy * cy) + 0.5);
         }
-        int cx_o = (int) (sqrt(ro2 - cy * cy) + 0.5);
+        else
+        {
+            cx_i = (int)(sqrt(ri2 - cy * cy) + 0.5);
+        }
+        int cx_o = (int)(sqrt(ro2 - cy * cy) + 0.5);
         int cyy = cy + y0;
 
         int dx_1 = cy / tan_end_angel;
@@ -195,15 +218,16 @@ void DrawArcCircle_Q3(GxEPD2_GFX &my_display, st_pwin *pwin, int x0, int y0, dou
         if (dx_1 < cx_o) { cx_o = dx_1; };
         if (dx_2 > cx_i) { cx_i = dx_2; };
 
-        if (cx_i <= cx_o) {
+        if (cx_i <= cx_o)
+        {
             gfx_line(my_display, pwin, x0 - cx_i, cyy, x0 - cx_o, cyy);
         }
-
     }
 }
 
-void DrawArcCircle_Q4(GxEPD2_GFX &my_display, st_pwin *pwin, int x0, int y0, double start_angle, double end_angle, int ri, int ro) {
-
+void DrawArcCircle_Q4(GxEPD2_GFX& my_display, st_pwin* pwin, int x0, int y0, double start_angle, double end_angle,
+                      int ri, int ro)
+{
     start_angle = (360 - start_angle) * (M_PI / 180);
     end_angle = (360 - end_angle) * (M_PI / 180);
     double tan_start_angel = tan(start_angle);
@@ -211,14 +235,18 @@ void DrawArcCircle_Q4(GxEPD2_GFX &my_display, st_pwin *pwin, int x0, int y0, dou
 
     int ri2 = ri * ri;
     int ro2 = ro * ro;
-    for (int cy = -ro; cy <= 0; cy++) {
+    for (int cy = -ro; cy <= 0; cy++)
+    {
         int cx_i;
-        if (abs(ri) < abs(cy)) {
+        if (abs(ri) < abs(cy))
+        {
             cx_i = -1;
-        } else {
-            cx_i = (int) (sqrt(ri2 - cy * cy) + 0.5);
         }
-        int cx_o = (int) (sqrt(ro2 - cy * cy) + 0.5);
+        else
+        {
+            cx_i = (int)(sqrt(ri2 - cy * cy) + 0.5);
+        }
+        int cx_o = (int)(sqrt(ro2 - cy * cy) + 0.5);
         int cyy = cy + y0;
 
         int dx_1 = tan_start_angel * cy * -1;
@@ -227,14 +255,16 @@ void DrawArcCircle_Q4(GxEPD2_GFX &my_display, st_pwin *pwin, int x0, int y0, dou
         if (dx_1 < cx_o) { cx_o = dx_1; };
         if (dx_2 > cx_i) { cx_i = dx_2; };
 
-        if (cx_i <= cx_o) {
+        if (cx_i <= cx_o)
+        {
             gfx_line(my_display, pwin, x0 - cx_i, cyy, x0 - cx_o, cyy);
         }
     }
 }
 
 //paint a full WatchView based on minutes, pwin contains indicator if refresh or just window calculation
-void PaintFullWatchMin(GxEPD2_GFX &my_display, st_pwin *pwin, int min) {
+void PaintFullWatchMin(GxEPD2_GFX& my_display, st_pwin* pwin, int min)
+{
     int rin;
 
 
@@ -283,16 +313,15 @@ void PaintFullWatchMin(GxEPD2_GFX &my_display, st_pwin *pwin, int min) {
     rin = (min >= 55) ? RIN : RIN_EMPTY;
     DrawArcCircle_Q4(my_display, pwin, 200, 150, 304, 326, rin, ROUT);
 
-//    rin = (min > 55) ? RIN : RIN_EMPTY;
+    //    rin = (min > 55) ? RIN : RIN_EMPTY;
     DrawArcCircle_Q4(my_display, pwin, 200, 150, 334, 356, RIN_EMPTY, ROUT);
 
     DrawArcCircle_Q4(my_display, pwin, 200, 150, 359, 360, SEP_IN, SEP_OUT);
     DrawArcCircle_Q1(my_display, pwin, 200, 150, 0, 1, SEP_IN, SEP_OUT);
-
-
 }
 
-void PaintPartialWatchMin(GxEPD2_GFX &my_display, st_pwin *pwin, int min) {
+void PaintPartialWatchMin(GxEPD2_GFX& my_display, st_pwin* pwin, int min)
+{
     int rin = RIN;
     if (min >= 55) DrawArcCircle_Q4(my_display, pwin, 200, 150, 304, 326, rin, ROUT);
     else if (min >= 50) DrawArcCircle_Q4(my_display, pwin, 200, 150, 274, 296, rin, ROUT);
@@ -306,11 +335,13 @@ void PaintPartialWatchMin(GxEPD2_GFX &my_display, st_pwin *pwin, int min) {
     else if (min >= 10) DrawArcCircle_Q1(my_display, pwin, 200, 150, 34, 56, rin, ROUT);
     else if (min >= 5) DrawArcCircle_Q1(my_display, pwin, 200, 150, 4, 26, rin, ROUT);
 
-//            display.drawRect(pwin.x0, pwin.y0, pwin.x1-pwin.x0, pwin.y1-pwin.y0,GxEPD_BLACK);
+    //            display.drawRect(pwin.x0, pwin.y0, pwin.x1-pwin.x0, pwin.y1-pwin.y0,GxEPD_BLACK);
 }
 
-int XSerialKeyWait() {// Wait for Key
-//    Serial.setDebugOutput(true);
+int XSerialKeyWait()
+{
+    // Wait for Key
+    //    Serial.setDebugOutput(true);
 #ifdef xXX
     Serial.println("Cont...");
     Serial.flush();
@@ -328,8 +359,8 @@ int XSerialKeyWait() {// Wait for Key
 }
 
 
-boolean PaintQuickTime(GxEPD2_GFX &display, boolean b_clear) {
-
+boolean PaintQuickTime(GxEPD2_GFX& display, boolean b_clear)
+{
     //Paint Time
     int16_t tbx, tby;
     uint16_t tbw, tbh;
@@ -338,7 +369,8 @@ boolean PaintQuickTime(GxEPD2_GFX &display, boolean b_clear) {
     uint16_t sbw, sbh;
 
     DateTime now = now_datetime();
-    DP("TimeBase PaintQuickTime: ");DPL(DateTimeString(now));
+    DP("TimeBase PaintQuickTime: ");
+    DPL(DateTimeString(now));
 
     char str_format[] = "hh:mm:ss";
     String str_time_now = now.toString(str_format);
@@ -363,16 +395,19 @@ boolean PaintQuickTime(GxEPD2_GFX &display, boolean b_clear) {
     display.setTextColor(GxEPD_BLACK);
     display.firstPage();
 
-    do {
+    do
+    {
         display.fillScreen(GxEPD_WHITE);
         display.setCursor(tx + x1, ty + y1);
         display.print(str_time_now);
-    } while (display.nextPage());
+    }
+    while (display.nextPage());
 
     delay(1000);
     DPL("Check Proximity Sensor in QuickTime");
     auto avg_proximity_data = ReadSensorDistance();
-    if (avg_proximity_data < 60) {
+    if (avg_proximity_data < 60)
+    {
         return false;
     }
     delay(800);
@@ -390,22 +425,26 @@ boolean PaintQuickTime(GxEPD2_GFX &display, boolean b_clear) {
 
     display.firstPage();
 
-    do {
+    do
+    {
         //Paint Time
         display.fillScreen(GxEPD_WHITE);
         display.setCursor(x, y);
         display.print(str_hour);
-
-    } while (display.nextPage());
+    }
+    while (display.nextPage());
 
     return true;
 }
 
-String GetAlarmInfo(GxEPD2_GFX &display, DateTime cur_time, bool b_minutes) {
+String GetAlarmInfo(GxEPD2_GFX& display, DateTime cur_time, bool b_minutes)
+{
     DateTime rtc_alarm = {};
     String str_alarm = "";
 
-    if (rtc_watch.getAlarm2(&rtc_alarm, cur_time)) { ;
+    if (rtc_watch.getAlarm2(&rtc_alarm, cur_time))
+    {
+        ;
 
         TimeSpan wakeup = rtc_alarm - cur_time;
         int hours = wakeup.hours();
@@ -414,32 +453,118 @@ String GetAlarmInfo(GxEPD2_GFX &display, DateTime cur_time, bool b_minutes) {
         char str_format2[] = "hh:mm";
 
         // On refresh mode (every 5min) , when less than one hour, update minutes
-        if (wakeup.days() == 0 && wakeup.hours() == 0 && wakeup.minutes() > 0 && b_minutes) {
+        if (wakeup.days() == 0 && wakeup.hours() == 0 && wakeup.minutes() > 0 && b_minutes)
+        {
             str_countdown = String(" (" + String(wakeup.minutes()) + "m)");
         }
 
         // Normal mode, show hours
-        if (wakeup.hours() < 24 && wakeup.days() == 0 && !b_minutes) {
+        if (wakeup.hours() < 24 && wakeup.days() == 0 && !b_minutes)
+        {
             str_countdown = String(" (" + String(hours) + "h)");
         }
 
-        if (str_countdown != "") {
+        if (str_countdown != "")
+        {
             str_alarm = rtc_alarm.toString(str_format2);
             str_alarm = String(str_alarm + str_countdown);
-        } else { DPL("Alarm more than 24 hours away"); }
-
-
-    } else {
+        }
+        else { DPL("Alarm more than 24 hours away"); }
+    }
+    else
+    {
         DPL("No alarm active");
     }
 
     return str_alarm;
 }
 
-void PaintWatch(GxEPD2_GFX &display, boolean b_refresh_only, boolean b_show_hhmm_time) {
+// Horizontal battery icon (21x16 pixels)
+// Each row needs 3 bytes (24 bits) to store 21 bits
+static const uint8_t PROGMEM BATTERY_ICON[] = {
+    0xFF, 0xFF, 0xFF,  // Top border
+    0x80, 0x00, 0x01,  // Vertical lines...
+    0x80, 0x00, 0x01,
+    0x80, 0x00, 0x01,
+    0x80, 0x00, 0x01,
+    0x80, 0x00, 0x01,
+    0x80, 0x00, 0x01,
+    0x80, 0x00, 0x01,
+    0x80, 0x00, 0x01,
+    0x80, 0x00, 0x01,
+    0x80, 0x00, 0x01,
+    0x80, 0x00, 0x01,
+    0x80, 0x00, 0x01,
+    0x80, 0x00, 0x01,
+    0x80, 0x00, 0x01,
+    0xFF, 0xFF, 0xFF   // Bottom border
+};
 
+
+
+// Warning icon (21x16 pixels)
+static const uint8_t PROGMEM WARNING_ICON[] = {
+    0x00, 0x08, 0x00,
+    0x00, 0x1C, 0x00,
+    0x00, 0x3C, 0x00,
+    0x00, 0x3E, 0x00,
+    0x00, 0x7F, 0x00,
+    0x00, 0xFF, 0x80,
+    0x01, 0xFF, 0x80,
+    0x03, 0xFF, 0xC0,
+    0x03, 0xFF, 0xE0,
+    0x07, 0xFF, 0xF0,
+    0x0F, 0xFF, 0xF0,
+    0x1F, 0xFF, 0xF8,
+    0x3F, 0xFF, 0xFC,
+    0x3F, 0xFF, 0xFE,
+    0x7F, 0xFF, 0xFE,
+    0xFF, 0xFF, 0xFF
+};
+
+
+
+
+#define ICON_WIDTH 24
+#define ICON_HEIGHT 16
+
+
+void drawBatteryStatus(GxEPD2_GFX &display, uint8_t batteryLevel, bool showWarning, int16_t x, int16_t y) {
+
+    // Draw warning icon if needed
+    if (showWarning) {
+        display.drawBitmap(x - (ICON_WIDTH+4), y, WARNING_ICON, ICON_WIDTH, ICON_HEIGHT, GxEPD_BLACK);
+    }
+
+    // Copy battery outline from PROGMEM
+    uint8_t batteryBitmap[48];  // 16 rows * 3 bytes (24 pixels wide)
+    memcpy_P(batteryBitmap, BATTERY_ICON, 48);
+
+    // Compute fill columns (20 usable pixels across, leave 2-pixel margin)
+    uint8_t fillCols = (batteryLevel * 20) / 100;
+
+    // Fill inside area: rows 4 to 11, columns 2 to (2 + fillCols - 1)
+    for (int row = 4; row <= 11; row++) {
+        for (uint8_t col = 2; col < 2 + fillCols; col++) {
+            uint8_t byteIndex = row * 3 + (col / 8);
+            uint8_t bitMask = 1 << (7 - (col % 8));  // MSB-first
+            batteryBitmap[byteIndex] |= bitMask;
+        }
+    }
+
+    // Draw battery
+    display.drawBitmap(x, y, batteryBitmap, ICON_WIDTH, ICON_HEIGHT, GxEPD_BLACK);
+
+
+
+}
+
+
+void PaintWatch(GxEPD2_GFX& display, boolean b_refresh_only, boolean b_show_hhmm_time)
+{
     DateTime now = now_datetime();
-    DP("TimeBase PaintWatch: ");DPL(DateTimeString(now));
+    DP("TimeBase PaintWatch: ");
+    DPL(DateTimeString(now));
 
     st_pwin pwin{};
     pwin.x0 = display.width() - 1;
@@ -451,11 +576,14 @@ void PaintWatch(GxEPD2_GFX &display, boolean b_refresh_only, boolean b_show_hhmm
     if (now.second() && min < 59) min = min + 1; //if wakeup is at 04:59 - make sure we enable the next segment
 
     // just make sure the watch get refreshed
-    if (min < 7 && !b_watch_refreshed) {
+    if (min < 7 && !b_watch_refreshed)
+    {
         DPL("***New Hour, repaint full watch");
         b_watch_refreshed = true;
         b_refresh_only = false;
-    } else if (min > 10) {
+    }
+    else if (min > 10)
+    {
         DPL("***No new Hour, normal refresh");
         b_watch_refreshed = false;
     }
@@ -463,44 +591,55 @@ void PaintWatch(GxEPD2_GFX &display, boolean b_refresh_only, boolean b_show_hhmm
 
     /* // *************** Paint the partial watch, every 5 min**************************************/
 
-    if (b_refresh_only) {
+    if (b_refresh_only)
+    {
         DPL("***** Partial Refresh of Display ***");
-//todo
-//        min=min+5;
+        //todo
+        //        min=min+5;
 
         pwin.simulate = true;
         PaintPartialWatchMin(display, &pwin, min);
 
         display.setPartialWindow(pwin.x0, pwin.y0, pwin.x1 - pwin.x0, pwin.y1 - pwin.y0);
         display.firstPage();
-        do {
+        do
+        {
             pwin.simulate = false;
             PaintPartialWatchMin(display, &pwin, min);
-        } while (display.nextPage());
+        }
+        while (display.nextPage());
 
         DateTime rtc_alarm = {};
-        if (rtc_watch.getAlarm2(&rtc_alarm, now)) { ;
+        if (rtc_watch.getAlarm2(&rtc_alarm, now))
+        {
+            ;
             TimeSpan wakeup = rtc_alarm - now;
             // On refresh mode (every 5min) , when less than one hour, update minutes
-            if (wakeup.days() == 0 && wakeup.hours() == 0 && wakeup.minutes() > 0) {
+            if (wakeup.days() == 0 && wakeup.hours() == 0 && wakeup.minutes() > 0)
+            {
                 char str_format2[] = "hh:mm";
-                String str_alarm = rtc_alarm.toString(str_format2) + String(" (" + String(wakeup.minutes() + 1) + "m)");;
+                String str_alarm = rtc_alarm.toString(str_format2) +
+                    String(" (" + String(wakeup.minutes() + 1) + "m)");;
 
                 display.setTextColor(GxEPD_BLACK);
                 display.setFont(&FreeSans12pt7b);
 
                 display.firstPage();
-                do {
+                do
+                {
                     PL(display, 10 * PT12_HEIGHT, 0, str_alarm, true, false);
-                } while (display.nextPage());
+                }
+                while (display.nextPage());
             }
         }
 
         /* // *************** Paint the full watch very hour **************************************/
-    } else {
+    }
+    else
+    {
         DPL("***** Full Refresh of Display ***");
 
-/*          Paint Time*/
+        /*          Paint Time*/
         int16_t tbx, tby;
         uint16_t tbw, tbh;
         String str_hour = String(now.hour());
@@ -514,8 +653,8 @@ void PaintWatch(GxEPD2_GFX &display, boolean b_refresh_only, boolean b_show_hhmm
 
         display.setFullWindow();
         display.firstPage();
-        do {
-
+        do
+        {
             display.fillScreen(GxEPD_WHITE);
             pwin.simulate = false;
             PaintFullWatchMin(display, &pwin, min);
@@ -523,15 +662,20 @@ void PaintWatch(GxEPD2_GFX &display, boolean b_refresh_only, boolean b_show_hhmm
             display.setCursor(x, y);
             display.print(str_hour);
 
-/*          Paint Alarm */
+            /*          Paint Alarm */
             DateTime rtc_alarm = {};
-            if (rtc_watch.getAlarm2(&rtc_alarm, now)) { ;
+            if (rtc_watch.getAlarm2(&rtc_alarm, now))
+            {
+                ;
                 TimeSpan wakeup = rtc_alarm - now;
                 DPL("** Check for Display of Wakup-Min**");
-                DP("RTC Alarm: ");DPL(DateTimeString(rtc_alarm));
-                DP("Now      : ");DPL(DateTimeString(now));
+                DP("RTC Alarm: ");
+                DPL(DateTimeString(rtc_alarm));
+                DP("Now      : ");
+                DPL(DateTimeString(now));
                 // Normal mode, show hours
-                if (wakeup.hours() < 24 && wakeup.days() == 0) {
+                if (wakeup.hours() < 24 && wakeup.days() == 0)
+                {
                     char str_format2[] = "hh:mm";
                     String str_alarm = rtc_alarm.toString(str_format2) + String(" (" + String(wakeup.hours()) + "h)");;
                     display.setTextColor(GxEPD_BLACK);
@@ -539,6 +683,40 @@ void PaintWatch(GxEPD2_GFX &display, boolean b_refresh_only, boolean b_show_hhmm
                     PL(display, 10 * PT12_HEIGHT, 0, str_alarm, false, false);
                 }
             }
+
+            /* print battery voltage */
+            RtcData rtcData;
+            rtcData.getRTCData();
+            BatteryMonitor monitor;
+            //            String batteryStatus = monitor.getStatusString(rtcData);
+            BatteryStatus status = monitor.getStatus(rtcData);
+
+
+            // Calculate position (adjust these values as needed for your layout)
+            int16_t x = display.width() - (ICON_WIDTH+18); // 15 pixels from right edge
+            int16_t y = display.height() - (ICON_HEIGHT+7); // 15 pixels from bottom edge
+
+            // Draw the battery status icon
+            // Convert EMA capacity to percentage (0-100)
+            uint8_t batteryLevel = static_cast<uint8_t>(status.ema_capacity_pct);
+            bool showWarning = status.sharp_drop_warning || status.low_voltage_warning;
+            drawBatteryStatus(display, batteryLevel, showWarning, x, y);
+
+            /*// Adjust the x-coordinate to align the string to the right edge
+            int16_t tbx, tby;
+            uint16_t tbw, tbh;
+
+            display.getTextBounds(batteryStatus, 0, 0, &tbx, &tby, &tbw, &tbh);
+            int x = display.width() - tbw;
+            int y = display.height() - tbh; // 10 pixels from the bottom
+
+            display.setTextColor(GxEPD_BLACK);
+            display.setFont(&FreeSans9pt7b);
+            display.setCursor(x+7, y+7);
+            display.print(batteryStatus);*/
+
+
+
         } while (display.nextPage());
     }
 }

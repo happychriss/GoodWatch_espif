@@ -14,6 +14,9 @@
 #include "nvs_flash.h"
 #include "nvs.h"
 #include "weather.h"
+#include "battery_support.h"
+#include "battery_constants.h"
+
 
 #define ALARM1_5_MIN 1
 #define ALARM2_ALARM 2
@@ -47,9 +50,19 @@ struct strct_alarm {
     DateTime time;
 };
 
+struct battery_str {
+    float voltage_buffer[TREND_WINDOW]; // Store voltage buffer
+    float ema_voltage = 0.0f;
+    float ema_capacity_pct = 0.0f;
+    float trend_slope = 0.0f;
+    bool sharp_drop_warning = false;
+    bool low_voltage_warning = false;
+};
+
 struct d_str {
     uint32_t crc32 = 0;   // 4 bytes
     struct strct_alarm alarms[ALARM_NUMBERS_DISPLAY];
+    battery_str battery;
 };
 
 
@@ -147,10 +160,27 @@ public:
                 d.alarms[i].valid = false;
                 d.alarms[i].i = i;
             }
+            DPL("**** Invalid RTC - Reinit Voltage Buffer ***");
+            for (int i = 0; i < TREND_WINDOW; i++) {
+                d.battery.voltage_buffer[i] = 0.0f;
+            }
+
             writeRTCData();
         }
 
         PrintAlarms();
+    }
+
+    // Get the voltage buffer as a vector
+    std::vector<float> getVoltageBuffer() {
+        return std::vector<float>(d.battery.voltage_buffer, d.battery.voltage_buffer + TREND_WINDOW);
+    }
+
+    // Update the voltage buffer with new values
+    void updateVoltageBuffer(const std::vector<float>& buffer) {
+        if (buffer.size() <= TREND_WINDOW) {
+            std::copy(buffer.begin(), buffer.end(), d.battery.voltage_buffer);
+        }
     }
 
     /*--------------------------------------

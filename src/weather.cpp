@@ -741,12 +741,19 @@ void GetWeather(struct_Weather *ptrWeather) {
             1);  /* Core where the task should run */
 
 
+    unsigned long startTime = millis();
+
     while (!b_wait_weather_data) {
+        const unsigned long timeout = 60000;
+        if (millis() - startTime > timeout) {
+            b_wait_weather_data = true; // Break the loop
+            return; // Indicate failure
+        }
         delay(500);
     }
 
     DPL("Done getting weather data.");
-    b_wait_weather_data = true;
+
 }
 
 bool returnHourIndexFromForecast(

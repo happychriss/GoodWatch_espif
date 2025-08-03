@@ -15,31 +15,34 @@
 void SetupWifi() {
     DP("Starting Wifi");
 
-    WiFi.disconnect();
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(SSID, PASSWORD);
-    WiFi.setSleep(false);
-    uint8_t connect_result;
+    WiFi.persistent(false);                    // avoid writing to flash
+    WiFi.disconnect(false, true);              // clean disconnect, keep radio on
+    WiFi.mode(WIFI_STA);                       // set to station mode
+    WiFi.setSleep(false);                      // disable WiFi sleep (optional)
+    WiFi.begin(SSID, PASSWORD);                // start connection
 
-    for (int i=0;i<20;i++) {
-        connect_result=WiFi.waitForConnectResult() ;
-        if (connect_result==WL_CONNECTED) break;
+    unsigned long startAttemptTime = millis();
+    const unsigned long timeout = 20000;        // total wait time in ms
+    const unsigned long checkInterval = 500;   // check every 100 ms
+
+    while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < timeout) {
         DP(".");
-        delay(200);
+        delay(checkInterval);
     }
 
-    if (connect_result!=WL_CONNECTED) {
-        DPL("Connection Failed! Rebooting...");
-        delay(5000);
-        ESP.restart();
+    if (WiFi.status() != WL_CONNECTED) {
+        DPL("\nConnection Failed! Rebooting...");
+        delay(1000);
+        ESP.restart();                         // fail fast and restart
     }
-    delay(200);
 
-    DPL("Wifi Details:");
-    DP("Wifi DNS: ");
-    DPL(WiFi.dnsIP());
-    DP("Wifi IP:");
-    DPL(WiFi.localIP());
+    // Connected successfully
+    DPL("\nWifi Connected!");
+    DP("IP: ");     DPL(WiFi.localIP());
+    DP("DNS: ");    DPL(WiFi.dnsIP());
+    DPL("WIFI DONE");
+}
+
 
 /*
     char ntpServerName[] = "mp3.ffh.de";
@@ -54,11 +57,7 @@ void SetupWifi() {
         uint32_t dt = millis() - t;
         DPF("Connected in: %i\n", dt);
     }*/
-    DPL("WIFI DONE");
 
-
-
-}
 
 void SetupSNTP() {
     DP("SNT Server Setup:");

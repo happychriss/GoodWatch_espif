@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="$PROJECT_DIR$/BatteryMonitor.h">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/BatteryMonitor.h" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/main.cpp">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/main.cpp" />
+              <option name="updatedContent" value="// ...existing code...&#10;    String source = &quot;\&quot;source\&quot;:\&quot;GW_Dev\&quot;&quot;;&#10;    String voltage = &quot;\&quot;voltage\&quot;:\&quot;&quot; + String(batteryVoltage, 2) + &quot;\&quot;&quot;;&#10;    String capacity = &quot;\&quot;capacity\&quot;:\&quot;&quot; + String(status.ema_capacity_pct, 1) + &quot;\&quot;&quot;;&#10;    String warnings = &quot;\&quot;warnings\&quot;:\&quot;&quot; + String(status.low_voltage_warning ? &quot;LOW &quot; : &quot;&quot;) + &#10;                    String(status.sharp_drop_warning ? &quot;DROP&quot; : &quot;&quot;) + &quot;\&quot;&quot;;&#10;    String statusStr = &quot;\&quot;bat_status_string\&quot;:\&quot;&quot; + batteryStatusString + &quot;\&quot;&quot;;&#10;    String slope = &quot;\&quot;bat_slope\&quot;:\&quot;&quot; + String(status.battery_slope, 3) + &quot;\&quot;&quot;; // Add slope field&#10;&#10;    String httpRequestData = &quot;{&quot; + source + &quot;,&quot; + voltage + &quot;,&quot; + capacity + &quot;,&quot; + warnings + &quot;,&quot; + statusStr + &quot;,&quot; + slope + &quot;}&quot;;&#10;// ...existing code...&#10;" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

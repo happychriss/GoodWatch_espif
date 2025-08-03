@@ -47,6 +47,8 @@
 
 #define LIGHT_IS_ON 0
 
+// How often to wake up the sensor and the clock in minutes
+#define WAKUEP_INTERVAL 5
 
 
 // esptool to reset Goodwacht
@@ -92,39 +94,11 @@ esp_sleep_wakeup_cause_t wakeup_reason;
 bool b_pir_wave = false;
 
 
-void battery_sent();
-
 #define CLOCK_INTERRUPT_PIN 39
 
 void IRAM_ATTR Ext_INT1_ISR() {
     b_pir_wave = true;// Do Something ...
 
-}
-
-void battery_sent() {
-    DPL("Sent battery update to GW Server");
-    int adc = analogRead(BATTERY_VOLTAGE);
-    double BatteryVoltage;
-    BatteryVoltage = (adc * 7.445) / 4096;
-    DP("Battery V: ");
-    DPL(BatteryVoltage);
-
-    SetupWifi();
-    WiFiClient client;
-    HTTPClient http;
-    http.begin(client, "http://192.168.1.110:8088/voltage");
-    http.addHeader("Content-Type", "application/json");
-    String source = "\"source\":\"GW_Dev\"";
-    String voltage = "\"voltage\":\"" + String(BatteryVoltage, 2) + "\"";
-    String httpRequestData = "{" + source + "," + voltage + "}";
-    DP("RequestString:");
-    DPL(httpRequestData);
-    int httpResponseCode = http.POST(httpRequestData);
-    DP("HTTP Response code: ");
-    DPL(httpResponseCode);
-
-    // Free resources
-    http.end();
 }
 
 void PlayBeepSound() {
@@ -182,6 +156,7 @@ void setup() {
 
 /* MAIN LOOP *********************************************************************************************/
 
+
 void loop() {
     DPL("****** Main Loop ***********");
     global_light_enabled_level = -1;
@@ -195,13 +170,6 @@ void loop() {
     DP("RTC Time now:");
     DPL(DateTimeString(now));
 
-//    I2C_Scanner();
-
-    int adc = analogRead(BATTERY_VOLTAGE);
-    double BatteryVoltage;
-    BatteryVoltage = (adc * 7.445) / 4096;
-    DP("Battery V: ");
-    DPL(BatteryVoltage);
 
 // Audio Init
     DP("Audio Init..");
@@ -209,6 +177,11 @@ void loop() {
     audio.setVolume(0); // 0...21
     DPL("done!");
 
+
+    if (false)
+    {
+        manage_battery();
+    }
     /*
         // **********************************************************************************************
         // Normal Boot **********************************************************************************
@@ -277,10 +250,10 @@ void loop() {
 
             /* measure battery performance */
             if (now_time.hour() == 22 && now_time.minute() == 35) {
-                battery_sent();
-
+                manage_battery();
             }
         }
+
 
         /* **********************************************************************************************
         /* Alarm wakeup  ***************************************************************************/
@@ -453,7 +426,7 @@ void loop() {
 
                 }
 
-//            battery_sent();
+//            send_battery_status();
             } // end of distrance checking loop for pir sensor (light not on)
         } // end of clock light is not on
 
@@ -492,7 +465,7 @@ void loop() {
     digitalWrite(DISPLAY_AND_SOUND_POWER, LOW);
 
 //    esp_sleep_enable_timer_wakeup(sleep_sec * 1000 * 1000);
-#define WAKUEP_INTERVAL 5
+
     DateTime dt = now_datetime();
     int next_wake_up_min = (((dt.minute()) / WAKUEP_INTERVAL) * WAKUEP_INTERVAL) + WAKUEP_INTERVAL;
     if (next_wake_up_min == 60) next_wake_up_min = 0;
@@ -519,4 +492,3 @@ void loop() {
 //    esp_light_sleep_start();
 
 }
-
